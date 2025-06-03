@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { EmailCard } from "./EmailCard"
 import { EmailDetail } from "./EmailDetail"
 import { 
@@ -21,8 +21,12 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Archive
+  Archive,
+  Loader2,
+  AlertTriangle
 } from "lucide-react"
+import { emailService, EmailMessage } from "@/services/emailService"
+import { useToast } from "@/hooks/use-toast"
 
 interface EmailInboxProps {
   refreshTrigger: number
@@ -75,15 +79,45 @@ const mockEmails = [
 ]
 
 export const EmailInbox = ({ refreshTrigger }: EmailInboxProps) => {
-  const [emails, setEmails] = useState(mockEmails)
+  const [emails, setEmails] = useState<EmailMessage[]>([])
   const [selectedEmail, setSelectedEmail] = useState<any>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [folderFilter, setFolderFilter] = useState("inbox")
   const [searchQuery, setSearchQuery] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  const fetchEmails = async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      console.log("Buscando emails...")
+      const fetchedEmails = await emailService.fetchEmails()
+      setEmails(fetchedEmails)
+      
+      toast({
+        title: "Emails carregados",
+        description: `${fetchedEmails.length} emails encontrados`,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar emails'
+      setError(errorMessage)
+      console.error("Erro ao buscar emails:", error)
+      
+      toast({
+        title: "Erro ao carregar emails",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Aqui seria feita a busca real por emails
-    console.log("Refreshing emails...")
+    fetchEmails()
   }, [refreshTrigger])
 
   const handleEmailClick = (email: any) => {
@@ -125,6 +159,32 @@ export const EmailInbox = ({ refreshTrigger }: EmailInboxProps) => {
 
   const unreadCount = emails.filter(e => !e.isRead).length
 
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Alert className="border-red-200 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <p className="font-medium text-red-800">Erro ao conectar com o servidor de email</p>
+                <p className="text-red-700">{error}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={fetchEmails}
+                  className="mt-2"
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <>
       <Card>
@@ -133,6 +193,7 @@ export const EmailInbox = ({ refreshTrigger }: EmailInboxProps) => {
             <CardTitle className="flex items-center space-x-2">
               <Mail className="h-5 w-5" />
               <span>Caixa de Entrada</span>
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               <Badge variant="outline">{filteredEmails.length} total</Badge>
               {unreadCount > 0 && (
                 <Badge variant="destructive">{unreadCount} não lidos</Badge>
@@ -166,66 +227,73 @@ export const EmailInbox = ({ refreshTrigger }: EmailInboxProps) => {
         </CardHeader>
         
         <CardContent>
-          <Tabs value={folderFilter} onValueChange={setFolderFilter} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="inbox" className="flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <span>Entrada</span>
-                <Badge variant="secondary" className="ml-1">
-                  {filteredEmails.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="unread" className="flex items-center space-x-2">
-                <Clock className="h-4 w-4" />
-                <span>Não lidos</span>
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount('unread')}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="important" className="flex items-center space-x-2">
-                <AlertCircle className="h-4 w-4" />
-                <span>Importantes</span>
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount('important')}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="archive" className="flex items-center space-x-2">
-                <Archive className="h-4 w-4" />
-                <span>Arquivados</span>
-                <Badge variant="secondary" className="ml-1">
-                  0
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-muted-foreground">Carregando emails...</p>
+            </div>
+          ) : (
+            <Tabs value={folderFilter} onValueChange={setFolderFilter} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="inbox" className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4" />
+                  <span>Entrada</span>
+                  <Badge variant="secondary" className="ml-1">
+                    {filteredEmails.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="unread" className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Não lidos</span>
+                  <Badge variant="secondary" className="ml-1">
+                    {getTabCount('unread')}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="important" className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Importantes</span>
+                  <Badge variant="secondary" className="ml-1">
+                    {getTabCount('important')}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="archive" className="flex items-center space-x-2">
+                  <Archive className="h-4 w-4" />
+                  <span>Arquivados</span>
+                  <Badge variant="secondary" className="ml-1">
+                    0
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="inbox" className="mt-4">
-              <EmailList 
-                emails={filteredEmails}
-                onEmailClick={handleEmailClick}
-              />
-            </TabsContent>
+              <TabsContent value="inbox" className="mt-4">
+                <EmailList 
+                  emails={filteredEmails}
+                  onEmailClick={handleEmailClick}
+                />
+              </TabsContent>
 
-            <TabsContent value="unread" className="mt-4">
-              <EmailList 
-                emails={emailsByStatus.unread}
-                onEmailClick={handleEmailClick}
-              />
-            </TabsContent>
+              <TabsContent value="unread" className="mt-4">
+                <EmailList 
+                  emails={emailsByStatus.unread}
+                  onEmailClick={handleEmailClick}
+                />
+              </TabsContent>
 
-            <TabsContent value="important" className="mt-4">
-              <EmailList 
-                emails={emailsByStatus.important}
-                onEmailClick={handleEmailClick}
-              />
-            </TabsContent>
+              <TabsContent value="important" className="mt-4">
+                <EmailList 
+                  emails={emailsByStatus.important}
+                  onEmailClick={handleEmailClick}
+                />
+              </TabsContent>
 
-            <TabsContent value="archive" className="mt-4">
-              <div className="text-center py-8">
-                <Archive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhum email arquivado</p>
-              </div>
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="archive" className="mt-4">
+                <div className="text-center py-8">
+                  <Archive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum email arquivado</p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
 

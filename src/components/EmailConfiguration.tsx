@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +12,8 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Settings, Mail, Shield, Eye, EyeOff } from "lucide-react"
+import { emailService } from "@/services/emailService"
+import { EmailConnectionTest } from "./EmailConnectionTest"
 
 interface EmailConfigurationProps {
   onSave: () => void
@@ -24,23 +25,24 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
     password: "",
     incomingServer: "",
     outgoingServer: "",
-    protocol: "IMAP",
+    protocol: "IMAP" as "IMAP" | "POP3",
     imapPort: "993",
     smtpPort: "465",
     useSSL: true
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [connectionTested, setConnectionTested] = useState(false)
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
+    setConnectionTested(false) // Reset connection test when config changes
   }
 
   const handleSave = () => {
-    // Salvar configurações no localStorage
-    localStorage.setItem('email_config', JSON.stringify(formData))
+    emailService.saveConfig(formData)
     onSave()
   }
 
@@ -55,6 +57,11 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
       smtpPort: "465",
       useSSL: true
     })
+    setConnectionTested(false)
+  }
+
+  const handleConnectionTestComplete = (success: boolean) => {
+    setConnectionTested(success)
   }
 
   return (
@@ -134,7 +141,7 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="protocol">Protocolo</Label>
-              <Select value={formData.protocol} onValueChange={(value) => handleInputChange('protocol', value)}>
+              <Select value={formData.protocol} onValueChange={(value: "IMAP" | "POP3") => handleInputChange('protocol', value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -175,13 +182,26 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
           </div>
 
           <div className="flex space-x-4">
-            <Button onClick={handleSave} className="flex-1">
+            <Button 
+              onClick={handleSave} 
+              className="flex-1"
+              disabled={!connectionTested}
+            >
               <Mail className="h-4 w-4 mr-2" />
               Salvar Configuração
             </Button>
           </div>
+
+          {!connectionTested && formData.username && formData.password && (
+            <p className="text-sm text-amber-600 text-center">
+              Teste a conexão antes de salvar a configuração
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      {/* Componente de teste de conexão */}
+      <EmailConnectionTest onTestComplete={handleConnectionTestComplete} />
 
       <Card>
         <CardHeader>
@@ -192,6 +212,7 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
           <p>• Certifique-se de usar senhas de aplicativo quando disponível</p>
           <p>• Todas as conexões utilizam SSL/TLS para segurança</p>
           <p>• IMAP e SMTP requerem autenticação</p>
+          <p>• Teste sempre a conexão antes de salvar</p>
         </CardContent>
       </Card>
     </div>
