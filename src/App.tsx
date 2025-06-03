@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
 import Agents from "./pages/Agents";
+import AgentBots from "./pages/AgentBots";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/agents" element={<Agents />} />
+            <Route path="/agent-bots" element={<AgentBots />} />
           </Routes>
         </BrowserRouter>
       </SidebarProvider>
