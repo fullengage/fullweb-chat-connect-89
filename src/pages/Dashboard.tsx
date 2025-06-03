@@ -1,5 +1,7 @@
+
 import { useState } from "react"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
 import { InboxManagement } from "@/components/InboxManagement"
@@ -76,14 +78,18 @@ export default function Dashboard() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
+        <AppSidebar />
         <SidebarInset>
           <div className="flex-1 space-y-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Painel de Atendimento ao Cliente</h1>
-                <p className="text-muted-foreground">
-                  Gerencie suas conversas do Chatwoot em tempo real
-                </p>
+            <div className="flex items-center justify-between border-b pb-4">
+              <div className="flex items-center space-x-4">
+                <SidebarTrigger />
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Painel de Atendimento ao Cliente</h1>
+                  <p className="text-muted-foreground">
+                    Gerencie suas conversas do Chatwoot em tempo real
+                  </p>
+                </div>
               </div>
               <Button onClick={handleRefresh} disabled={conversationsLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${conversationsLoading ? 'animate-spin' : ''}`} />
