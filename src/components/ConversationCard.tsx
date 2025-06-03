@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Clock, User } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 interface Conversation {
   id: number
@@ -48,6 +49,19 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
     }
   }
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'Aberta'
+      case 'pending':
+        return 'Pendente'
+      case 'resolved':
+        return 'Resolvida'
+      default:
+        return status
+    }
+  }
+
   const getChannelIcon = (channelType: string) => {
     switch (channelType) {
       case 'Channel::WebWidget':
@@ -85,7 +99,7 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold truncate">
-                  {conversation.contact.name || 'Unknown Contact'}
+                  {conversation.contact.name || 'Contato Desconhecido'}
                 </h3>
                 <div className="flex items-center space-x-2">
                   {conversation.unread_count > 0 && (
@@ -94,7 +108,7 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
                     </Badge>
                   )}
                   <Badge className={`text-xs ${getStatusColor(conversation.status)}`}>
-                    {conversation.status}
+                    {getStatusText(conversation.status)}
                   </Badge>
                 </div>
               </div>
@@ -108,7 +122,7 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
 
               {lastMessage && (
                 <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                  {lastMessage.content || 'No message content'}
+                  {lastMessage.content || 'Nenhum conteúdo da mensagem'}
                 </p>
               )}
 
@@ -129,7 +143,7 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
                   ) : (
                     <div className="flex items-center space-x-1">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-xs text-gray-400">Unassigned</span>
+                      <span className="text-xs text-gray-400">Não atribuído</span>
                     </div>
                   )}
                 </div>
@@ -137,7 +151,7 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
                 <div className="flex items-center space-x-1">
                   <Clock className="h-3 w-3 text-gray-400" />
                   <span className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true, locale: ptBR })}
                   </span>
                 </div>
               </div>

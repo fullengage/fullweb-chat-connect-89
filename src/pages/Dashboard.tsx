@@ -47,8 +47,8 @@ export default function Dashboard() {
   const handleRefresh = () => {
     refetchConversations()
     toast({
-      title: "Refreshing data",
-      description: "Fetching latest conversations...",
+      title: "Atualizando dados",
+      description: "Buscando as conversas mais recentes...",
     })
   }
 
@@ -66,14 +66,14 @@ export default function Dashboard() {
           <div className="flex-1 space-y-6 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Customer Service Dashboard</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Painel de Atendimento ao Cliente</h1>
                 <p className="text-muted-foreground">
-                  Manage your Chatwoot conversations in real-time
+                  Gerencie suas conversas do Chatwoot em tempo real
                 </p>
               </div>
               <Button onClick={handleRefresh} disabled={conversationsLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${conversationsLoading ? 'animate-spin' : ''}`} />
-                Refresh
+                Atualizar
               </Button>
             </div>
 
@@ -102,7 +102,7 @@ export default function Dashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                       <MessageSquare className="h-5 w-5" />
-                      <span>Conversations</span>
+                      <span>Conversas</span>
                       {filteredConversations.length > 0 && (
                         <span className="text-sm font-normal text-muted-foreground">
                           ({filteredConversations.length} total)
@@ -119,9 +119,9 @@ export default function Dashboard() {
                       </div>
                     ) : conversationsError ? (
                       <div className="text-center py-8">
-                        <p className="text-red-600 mb-2">Error loading conversations</p>
+                        <p className="text-red-600 mb-2">Erro ao carregar conversas</p>
                         <Button onClick={handleRefresh} variant="outline">
-                          Try Again
+                          Tentar Novamente
                         </Button>
                       </div>
                     ) : filteredConversations.length === 0 ? (
@@ -129,8 +129,8 @@ export default function Dashboard() {
                         <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-500">
                           {accountIdNumber === 0 
-                            ? "Enter an account ID to view conversations" 
-                            : "No conversations found with the current filters"}
+                            ? "Digite um ID de conta para visualizar as conversas" 
+                            : "Nenhuma conversa encontrada com os filtros atuais"}
                         </p>
                       </div>
                     ) : (
@@ -141,8 +141,8 @@ export default function Dashboard() {
                             conversation={conversation}
                             onClick={() => {
                               toast({
-                                title: "Conversation Details",
-                                description: `Opening conversation with ${conversation.contact.name}`,
+                                title: "Detalhes da Conversa",
+                                description: `Abrindo conversa com ${conversation.contact.name}`,
                               })
                             }}
                           />

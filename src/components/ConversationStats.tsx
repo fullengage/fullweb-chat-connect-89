@@ -45,28 +45,28 @@ export const ConversationStats = ({ conversations, isLoading }: ConversationStat
 
   const stats = [
     {
-      title: "Total Conversations",
+      title: "Total de Conversas",
       value: totalConversations,
       icon: MessageCircle,
       color: "text-blue-600",
       bgColor: "bg-blue-100"
     },
     {
-      title: "Open",
+      title: "Abertas",
       value: openConversations,
       icon: Clock,
       color: "text-green-600",
       bgColor: "bg-green-100"
     },
     {
-      title: "Pending",
+      title: "Pendentes",
       value: pendingConversations,
       icon: Users,
       color: "text-yellow-600",
       bgColor: "bg-yellow-100"
     },
     {
-      title: "Resolved",
+      title: "Resolvidas",
       value: resolvedConversations,
       icon: CheckCircle,
       color: "text-gray-600",
@@ -101,12 +101,12 @@ export const ConversationStats = ({ conversations, isLoading }: ConversationStat
         <div className="flex space-x-4">
           {unassignedConversations > 0 && (
             <Badge variant="outline" className="text-orange-600 border-orange-600">
-              {unassignedConversations} Unassigned
+              {unassignedConversations} Não Atribuídas
             </Badge>
           )}
           {totalUnread > 0 && (
             <Badge variant="destructive">
-              {totalUnread} Unread Messages
+              {totalUnread} Mensagens Não Lidas
             </Badge>
           )}
         </div>

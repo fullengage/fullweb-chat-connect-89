@@ -10,23 +10,23 @@ const Index = () => {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Customer Service
-            <span className="text-blue-600"> Dashboard</span>
+            Painel de Atendimento
+            <span className="text-blue-600"> ao Cliente</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Streamline your customer support operations with real-time Chatwoot integration, 
-            advanced filtering, and comprehensive analytics in one unified dashboard.
+            Otimize suas operações de suporte ao cliente com integração em tempo real do Chatwoot, 
+            filtragem avançada e análises abrangentes em um painel unificado.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="text-lg px-8 py-4">
               <Link to="/dashboard">
                 <MessageSquare className="mr-2 h-5 w-5" />
-                Open Dashboard
+                Abrir Painel
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-lg px-8 py-4">
               <a href="https://www.chatwoot.com/" target="_blank" rel="noopener noreferrer">
-                Learn about Chatwoot
+                Saiba mais sobre o Chatwoot
               </a>
             </Button>
           </div>
@@ -36,16 +36,16 @@ const Index = () => {
           <Card className="text-center">
             <CardHeader>
               <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <CardTitle>Real-time Conversations</CardTitle>
+              <CardTitle>Conversas em Tempo Real</CardTitle>
               <CardDescription>
-                Monitor all customer conversations across multiple channels in real-time
+                Monitore todas as conversas dos clientes em múltiplos canais em tempo real
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Live conversation updates</li>
-                <li>• Multi-channel support</li>
-                <li>• Message status tracking</li>
+                <li>• Atualizações de conversa ao vivo</li>
+                <li>• Suporte a múltiplos canais</li>
+                <li>• Acompanhamento de status de mensagens</li>
               </ul>
             </CardContent>
           </Card>
@@ -53,16 +53,16 @@ const Index = () => {
           <Card className="text-center">
             <CardHeader>
               <BarChart3 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <CardTitle>Advanced Analytics</CardTitle>
+              <CardTitle>Análises Avançadas</CardTitle>
               <CardDescription>
-                Get insights into your team performance and conversation metrics
+                Obtenha insights sobre o desempenho da sua equipe e métricas de conversas
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Conversation statistics</li>
-                <li>• Response time tracking</li>
-                <li>• Agent performance</li>
+                <li>• Estatísticas de conversas</li>
+                <li>• Acompanhamento de tempo de resposta</li>
+                <li>• Desempenho dos atendentes</li>
               </ul>
             </CardContent>
           </Card>
@@ -70,16 +70,16 @@ const Index = () => {
           <Card className="text-center">
             <CardHeader>
               <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-              <CardTitle>Smart Filtering</CardTitle>
+              <CardTitle>Filtragem Inteligente</CardTitle>
               <CardDescription>
-                Filter conversations by status, agent, channel, and more
+                Filtre conversas por status, atendente, canal e muito mais
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Status-based filtering</li>
-                <li>• Agent assignment</li>
-                <li>• Channel categorization</li>
+                <li>• Filtragem por status</li>
+                <li>• Atribuição de atendentes</li>
+                <li>• Categorização por canal</li>
               </ul>
             </CardContent>
           </Card>
@@ -88,16 +88,16 @@ const Index = () => {
         <div className="bg-white rounded-xl shadow-lg p-8 text-center">
           <Zap className="h-16 w-16 text-yellow-500 mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Multi-Company Support
+            Suporte a Múltiplas Empresas
           </h2>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Manage multiple companies and accounts from a single dashboard. 
-            Switch between different Chatwoot accounts seamlessly and maintain 
-            complete visibility across your entire customer service operation.
+            Gerencie múltiplas empresas e contas de um único painel. 
+            Alterne entre diferentes contas do Chatwoot facilmente e mantenha 
+            visibilidade completa de toda sua operação de atendimento ao cliente.
           </p>
           <Button asChild>
             <Link to="/dashboard">
-              Get Started Now
+              Começar Agora
             </Link>
           </Button>
         </div>
