@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp } from "lucide-react";
+import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp, UsersRound } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
@@ -49,6 +49,11 @@ const menuItems = [
     title: "Agentes",
     url: "/agents",
     icon: Inbox,
+  },
+  {
+    title: "Equipes",
+    url: "/teams",
+    icon: UsersRound,
   },
   {
     title: "Agent Bots",

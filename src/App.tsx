@@ -13,6 +13,7 @@ import AgentBots from "./pages/AgentBots";
 import Conversations from "./pages/Conversations";
 import Email from "./pages/Email";
 import Analytics from "./pages/Analytics";
+import Teams from "./pages/Teams";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/agent-bots" element={<AgentBots />} />
+            <Route path="/teams" element={<Teams />} />
           </Routes>
         </BrowserRouter>
       </SidebarProvider>
