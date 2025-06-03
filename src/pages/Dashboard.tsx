@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { ChatwootFilters } from "@/components/ChatwootFilters"
@@ -10,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { KanbanBoard } from "@/components/KanbanBoard"
+import { Kanban } from "lucide-react"
 
 export default function Dashboard() {
   const [accountId, setAccountId] = useState("")
@@ -54,6 +55,17 @@ export default function Dashboard() {
     })
   }
 
+  const handleStatusChange = (conversationId: number, newStatus: string) => {
+    // Aqui seria implementada a lógica para atualizar o status da conversa
+    console.log(`Updating conversation ${conversationId} to status ${newStatus}`)
+    toast({
+      title: "Status atualizado",
+      description: `Conversa movida para ${newStatus}`,
+    })
+    // Refetch conversations to get updated data
+    refetchConversations()
+  }
+
   const filteredConversations = conversations.filter(conversation => {
     if (assigneeId === "unassigned") {
       return !conversation.assignee
@@ -95,10 +107,14 @@ export default function Dashboard() {
 
             {accountIdNumber > 0 && (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="overview" className="flex items-center space-x-2">
                     <BarChart3 className="h-4 w-4" />
                     <span>Visão Geral</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="kanban" className="flex items-center space-x-2">
+                    <Kanban className="h-4 w-4" />
+                    <span>Kanban</span>
                   </TabsTrigger>
                   <TabsTrigger value="conversations" className="flex items-center space-x-2">
                     <MessageSquare className="h-4 w-4" />
@@ -119,6 +135,18 @@ export default function Dashboard() {
                   <ConversationManagement
                     accountId={accountIdNumber}
                     selectedInboxId={inboxId !== "all" ? parseInt(inboxId) : undefined}
+                  />
+                </TabsContent>
+
+                <TabsContent value="kanban" className="space-y-6 mt-6">
+                  <KanbanBoard
+                    conversations={filteredConversations}
+                    onConversationClick={(conversation) => {
+                      // Aqui seria implementada a lógica para abrir detalhes da conversa
+                      console.log('Opening conversation:', conversation.id)
+                    }}
+                    onStatusChange={handleStatusChange}
+                    isLoading={conversationsLoading}
                   />
                 </TabsContent>
 
