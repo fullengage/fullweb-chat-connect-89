@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Clock, User } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { ptBR } from "date-fns/locale/pt-BR"
 
 interface Conversation {
   id: number
