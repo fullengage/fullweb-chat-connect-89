@@ -3,11 +3,12 @@ import { useState } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
-import { ConversationCard } from "@/components/ConversationCard"
+import { InboxManagement } from "@/components/InboxManagement"
+import { ConversationManagement } from "@/components/ConversationManagement"
 import { useChatwootConversations, useChatwootAgents, useChatwootInboxes } from "@/hooks/useChatwootData"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, MessageSquare } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Dashboard() {
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [status, setStatus] = useState("all")
   const [assigneeId, setAssigneeId] = useState("all")
   const [inboxId, setInboxId] = useState("all")
+  const [activeTab, setActiveTab] = useState("overview")
   const { toast } = useToast()
 
   const accountIdNumber = accountId ? parseInt(accountId) : 0
@@ -48,7 +50,7 @@ export default function Dashboard() {
     refetchConversations()
     toast({
       title: "Atualizando dados",
-      description: "Buscando as conversas mais recentes...",
+      description: "Buscando as informações mais recentes...",
     })
   }
 
@@ -92,66 +94,57 @@ export default function Dashboard() {
             />
 
             {accountIdNumber > 0 && (
-              <>
-                <ConversationStats
-                  conversations={filteredConversations}
-                  isLoading={conversationsLoading}
-                />
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="overview" className="flex items-center space-x-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Visão Geral</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="conversations" className="flex items-center space-x-2">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Conversas</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="inboxes" className="flex items-center space-x-2">
+                    <Inbox className="h-4 w-4" />
+                    <span>Caixas de Entrada</span>
+                  </TabsTrigger>
+                </TabsList>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <MessageSquare className="h-5 w-5" />
-                      <span>Conversas</span>
-                      {filteredConversations.length > 0 && (
-                        <span className="text-sm font-normal text-muted-foreground">
-                          ({filteredConversations.length} total)
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {conversationsLoading ? (
-                      <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                          <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse" />
-                        ))}
-                      </div>
-                    ) : conversationsError ? (
-                      <div className="text-center py-8">
-                        <p className="text-red-600 mb-2">Erro ao carregar conversas</p>
-                        <Button onClick={handleRefresh} variant="outline">
-                          Tentar Novamente
-                        </Button>
-                      </div>
-                    ) : filteredConversations.length === 0 ? (
-                      <div className="text-center py-8">
-                        <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500">
-                          {accountIdNumber === 0 
-                            ? "Digite um ID de conta para visualizar as conversas" 
-                            : "Nenhuma conversa encontrada com os filtros atuais"}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {filteredConversations.map((conversation) => (
-                          <ConversationCard
-                            key={conversation.id}
-                            conversation={conversation}
-                            onClick={() => {
-                              toast({
-                                title: "Detalhes da Conversa",
-                                description: `Abrindo conversa com ${conversation.contact.name}`,
-                              })
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
+                <TabsContent value="overview" className="space-y-6 mt-6">
+                  <ConversationStats
+                    conversations={filteredConversations}
+                    isLoading={conversationsLoading}
+                  />
+                  
+                  <ConversationManagement
+                    accountId={accountIdNumber}
+                    selectedInboxId={inboxId !== "all" ? parseInt(inboxId) : undefined}
+                  />
+                </TabsContent>
+
+                <TabsContent value="conversations" className="space-y-6 mt-6">
+                  <ConversationManagement
+                    accountId={accountIdNumber}
+                    selectedInboxId={inboxId !== "all" ? parseInt(inboxId) : undefined}
+                  />
+                </TabsContent>
+
+                <TabsContent value="inboxes" className="space-y-6 mt-6">
+                  <InboxManagement accountId={accountIdNumber} />
+                </TabsContent>
+              </Tabs>
+            )}
+
+            {accountIdNumber === 0 && (
+              <div className="text-center py-12">
+                <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Digite um ID de conta para começar
+                </h3>
+                <p className="text-gray-500">
+                  Informe o ID da sua conta Chatwoot nos filtros acima para visualizar suas conversas
+                </p>
+              </div>
             )}
           </div>
         </SidebarInset>
