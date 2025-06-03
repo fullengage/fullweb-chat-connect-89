@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail } from "lucide-react";
+import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
@@ -28,6 +29,11 @@ const menuItems = [
     title: "Conversas",
     url: "/conversations",
     icon: MessageSquare,
+  },
+  {
+    title: "Análises Avançadas",
+    url: "/analytics",
+    icon: TrendingUp,
   },
   {
     title: "Emails",
