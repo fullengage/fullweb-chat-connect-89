@@ -1,107 +1,187 @@
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, BarChart3, Users, Zap } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Bot, 
+  MessageSquare, 
+  BarChart3, 
+  Users, 
+  Zap,
+  ArrowRight,
+  LogOut
+} from 'lucide-react';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, signOut, loading } = useAuth();
+
+  const handleAuthAction = async () => {
+    if (user) {
+      await signOut();
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const features = [
+    {
+      icon: MessageSquare,
+      title: "Gestão de Conversas",
+      description: "Gerencie todas suas conversas do Chatwoot em um só lugar"
+    },
+    {
+      icon: BarChart3,
+      title: "Analytics Avançados",
+      description: "Análises detalhadas de performance e métricas de atendimento"
+    },
+    {
+      icon: Users,
+      title: "Gerenciamento de Equipes",
+      description: "Organize suas equipes e otimize a colaboração"
+    },
+    {
+      icon: Bot,
+      title: "Agent Bots",
+      description: "Automatize respostas com inteligência artificial"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Painel de Atendimento
-            <span className="text-blue-600"> ao Cliente</span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Otimize suas operações de suporte ao cliente com integração em tempo real do Chatwoot, 
-            filtragem avançada e análises abrangentes em um painel unificado.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8 py-4">
-              <Link to="/dashboard">
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Abrir Painel
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-4">
-              <a href="https://www.chatwoot.com/" target="_blank" rel="noopener noreferrer">
-                Saiba mais sobre o Chatwoot
-              </a>
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="border-b bg-white/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-600 rounded-lg">
+                <Bot className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">CRM Hub</h1>
+                <p className="text-xs text-gray-600">Gestão Inteligente</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {user && (
+                <div className="text-sm text-gray-600">
+                  Olá, {user.email}
+                </div>
+              )}
+              <Button 
+                onClick={handleAuthAction}
+                disabled={loading}
+                variant={user ? "outline" : "default"}
+                className={user ? "" : "bg-purple-600 hover:bg-purple-700"}
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                ) : user ? (
+                  <>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </>
+                ) : (
+                  'Fazer Login'
+                )}
+              </Button>
+              
+              {user && (
+                <Button onClick={() => navigate('/dashboard')}>
+                  Dashboard
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
+      </header>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          <Card className="text-center">
-            <CardHeader>
-              <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <CardTitle>Conversas em Tempo Real</CardTitle>
-              <CardDescription>
-                Monitore todas as conversas dos clientes em múltiplos canais em tempo real
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Atualizações de conversa ao vivo</li>
-                <li>• Suporte a múltiplos canais</li>
-                <li>• Acompanhamento de status de mensagens</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader>
-              <BarChart3 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <CardTitle>Análises Avançadas</CardTitle>
-              <CardDescription>
-                Obtenha insights sobre o desempenho da sua equipe e métricas de conversas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Estatísticas de conversas</li>
-                <li>• Acompanhamento de tempo de resposta</li>
-                <li>• Desempenho dos atendentes</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader>
-              <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-              <CardTitle>Filtragem Inteligente</CardTitle>
-              <CardDescription>
-                Filtre conversas por status, atendente, canal e muito mais
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Filtragem por status</li>
-                <li>• Atribuição de atendentes</li>
-                <li>• Categorização por canal</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-          <Zap className="h-16 w-16 text-yellow-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Suporte a Múltiplas Empresas
+      {/* Hero Section */}
+      <main className="container mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Transforme seu
+            <span className="text-purple-600"> Atendimento</span>
           </h2>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Gerencie múltiplas empresas e contas de um único painel. 
-            Alterne entre diferentes contas do Chatwoot facilmente e mantenha 
-            visibilidade completa de toda sua operação de atendimento ao cliente.
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Plataforma completa para gerenciar conversas, equipes e análises de atendimento ao cliente com inteligência artificial.
           </p>
-          <Button asChild>
-            <Link to="/dashboard">
-              Começar Agora
-            </Link>
-          </Button>
+          
+          {!user && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/auth')}
+                className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-3"
+              >
+                Começar Agora
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="text-lg px-8 py-3"
+              >
+                Ver Demo
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader className="text-center">
+                  <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
+                    <Icon className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <CardTitle className="text-lg">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 text-center">{feature.description}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* CTA Section */}
+        <div className="text-center bg-white rounded-2xl p-12 shadow-lg">
+          <Zap className="h-12 w-12 text-purple-600 mx-auto mb-6" />
+          <h3 className="text-3xl font-bold text-gray-900 mb-4">
+            Pronto para revolucionar seu atendimento?
+          </h3>
+          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+            Junte-se a centenas de empresas que já transformaram seu atendimento ao cliente com nossa plataforma.
+          </p>
+          
+          {user ? (
+            <Button 
+              size="lg" 
+              onClick={() => navigate('/dashboard')}
+              className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-3"
+            >
+              Ir para Dashboard
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          ) : (
+            <Button 
+              size="lg" 
+              onClick={() => navigate('/auth')}
+              className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-3"
+            >
+              Começar Gratuitamente
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          )}
+        </div>
+      </main>
     </div>
   );
 };
