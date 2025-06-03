@@ -2,7 +2,6 @@
 import { useQuery } from "@tanstack/react-query";
 
 const DIFY_API_BASE = "http://meuevento-dify.n1n956.easypanel.host/v1";
-const DIFY_API_KEY = "app-pmIrUkTuI4HQpyYc4l1rOkGR";
 
 interface DifyBot {
   id: string;
@@ -18,10 +17,43 @@ interface DifyBot {
 const fetchDifyBots = async (): Promise<DifyBot[]> => {
   console.log("Fetching Dify bots...");
   
+  const apiKey = localStorage.getItem('dify_api_key');
+  
+  if (!apiKey) {
+    console.log("No API key found, returning mock data");
+    // Retornar dados mock quando não há chave da API
+    return [
+      {
+        id: "1",
+        name: "Assistente de Atendimento",
+        description: "Bot principal para atendimento ao cliente",
+        status: "active",
+        created_at: new Date().toISOString(),
+        conversations_count: 45
+      },
+      {
+        id: "2",
+        name: "Bot de Vendas",
+        description: "Especializado em processos de venda",
+        status: "inactive",
+        created_at: new Date().toISOString(),
+        conversations_count: 23
+      },
+      {
+        id: "3",
+        name: "Suporte Técnico",
+        description: "Bot para questões técnicas e troubleshooting",
+        status: "training",
+        created_at: new Date().toISOString(),
+        conversations_count: 12
+      }
+    ];
+  }
+  
   try {
     const response = await fetch(`${DIFY_API_BASE}/apps`, {
       headers: {
-        'Authorization': `Bearer ${DIFY_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     });
@@ -72,11 +104,17 @@ export const useDifyBots = () => {
 export const createDifyBot = async (botData: Partial<DifyBot>) => {
   console.log("Creating Dify bot:", botData);
   
+  const apiKey = localStorage.getItem('dify_api_key');
+  
+  if (!apiKey) {
+    throw new Error("API key not configured");
+  }
+  
   try {
     const response = await fetch(`${DIFY_API_BASE}/apps`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${DIFY_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(botData),
@@ -91,4 +129,14 @@ export const createDifyBot = async (botData: Partial<DifyBot>) => {
     console.error("Error creating Dify bot:", error);
     throw error;
   }
+};
+
+// Função para verificar se a API key está configurada
+export const hasApiKey = (): boolean => {
+  return !!localStorage.getItem('dify_api_key');
+};
+
+// Função para obter a API key
+export const getApiKey = (): string | null => {
+  return localStorage.getItem('dify_api_key');
 };

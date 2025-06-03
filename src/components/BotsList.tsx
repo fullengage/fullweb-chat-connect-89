@@ -6,9 +6,10 @@ import { Bot } from "lucide-react";
 
 interface BotsListProps {
   searchTerm: string;
+  onApiKeyRequired: () => void;
 }
 
-export const BotsList = ({ searchTerm }: BotsListProps) => {
+export const BotsList = ({ searchTerm, onApiKeyRequired }: BotsListProps) => {
   const { data: bots = [], isLoading, error } = useDifyBots();
 
   const filteredBots = bots.filter(bot => 
@@ -69,7 +70,7 @@ export const BotsList = ({ searchTerm }: BotsListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {filteredBots.map((bot) => (
-        <BotCard key={bot.id} bot={bot} />
+        <BotCard key={bot.id} bot={bot} onApiKeyRequired={onApiKeyRequired} />
       ))}
     </div>
   );
