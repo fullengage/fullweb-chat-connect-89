@@ -11,6 +11,7 @@ import Contacts from "./pages/Contacts";
 import Agents from "./pages/Agents";
 import AgentBots from "./pages/AgentBots";
 import Conversations from "./pages/Conversations";
+import Email from "./pages/Email";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/conversations" element={<Conversations />} />
+            <Route path="/email" element={<Email />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/agent-bots" element={<AgentBots />} />
