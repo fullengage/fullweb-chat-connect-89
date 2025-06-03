@@ -1,8 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-const DIFY_API_BASE = "http://meuevento-dify.n1n956.easypanel.host/v1";
-
 interface DifyBot {
   id: string;
   name: string;
@@ -13,11 +11,17 @@ interface DifyBot {
   conversations_count?: number;
 }
 
+// Função para obter a Base URL configurada
+const getDifyBaseUrl = (): string => {
+  return localStorage.getItem('dify_base_url') || "http://meuevento-dify.n1n956.easypanel.host/v1";
+};
+
 // Função para buscar bots do Dify
 const fetchDifyBots = async (): Promise<DifyBot[]> => {
   console.log("Fetching Dify bots...");
   
   const apiKey = localStorage.getItem('dify_api_key');
+  const baseUrl = getDifyBaseUrl();
   
   if (!apiKey) {
     console.log("No API key found, returning mock data");
@@ -51,7 +55,7 @@ const fetchDifyBots = async (): Promise<DifyBot[]> => {
   }
   
   try {
-    const response = await fetch(`${DIFY_API_BASE}/apps`, {
+    const response = await fetch(`${baseUrl}/apps`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -105,13 +109,14 @@ export const createDifyBot = async (botData: Partial<DifyBot>) => {
   console.log("Creating Dify bot:", botData);
   
   const apiKey = localStorage.getItem('dify_api_key');
+  const baseUrl = getDifyBaseUrl();
   
   if (!apiKey) {
     throw new Error("API key not configured");
   }
   
   try {
-    const response = await fetch(`${DIFY_API_BASE}/apps`, {
+    const response = await fetch(`${baseUrl}/apps`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -139,4 +144,9 @@ export const hasApiKey = (): boolean => {
 // Função para obter a API key
 export const getApiKey = (): string | null => {
   return localStorage.getItem('dify_api_key');
+};
+
+// Função para obter a Base URL
+export const getBaseUrl = (): string => {
+  return getDifyBaseUrl();
 };

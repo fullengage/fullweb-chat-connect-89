@@ -54,7 +54,9 @@ export const BotChatDialog = ({ open, onOpenChange, botName, apiKey }: BotChatDi
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://meuevento-dify.n1n956.easypanel.host/v1/chat-messages', {
+      const baseUrl = localStorage.getItem('dify_base_url') || 'http://meuevento-dify.n1n956.easypanel.host/v1';
+      
+      const response = await fetch(`${baseUrl}/chat-messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -94,13 +96,13 @@ export const BotChatDialog = ({ open, onOpenChange, botName, apiKey }: BotChatDi
       console.error('Error sending message:', error);
       toast({
         title: "Erro ao enviar mensagem",
-        description: "Verifique sua conexão e a chave da API",
+        description: "Verifique sua conexão e a configuração da API",
         variant: "destructive"
       });
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Erro ao conectar com o bot. Verifique sua configuração.",
+        content: "Erro ao conectar com o bot. Verifique sua configuração da API.",
         role: 'assistant',
         timestamp: new Date()
       };
