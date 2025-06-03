@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
 import Agents from "./pages/Agents";
 import AgentBots from "./pages/AgentBots";
+import Conversations from "./pages/Conversations";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/conversations" element={<Conversations />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/agent-bots" element={<AgentBots />} />
