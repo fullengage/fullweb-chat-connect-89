@@ -83,6 +83,11 @@ export default function Dashboard() {
       name: conv.contact?.name || 'Contato Desconhecido',
       email: conv.contact?.email,
       avatar_url: conv.contact?.avatar_url
+    },
+    inbox: {
+      id: conv.inbox?.id || 0,
+      name: conv.inbox?.name || 'Inbox Desconhecido',
+      channel_type: conv.inbox?.channel_type || 'webchat'
     }
   }))
 

@@ -3,33 +3,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Inbox, Plus, Settings, Users, MessageCircle } from "lucide-react"
+import { Inbox, Mail, MessageSquare, Plus } from "lucide-react"
 import { useInboxes } from "@/hooks/useSupabaseData"
 
 interface InboxManagementProps {
@@ -37,44 +11,14 @@ interface InboxManagementProps {
 }
 
 export const InboxManagement = ({ accountId }: InboxManagementProps) => {
-  const [selectedInbox, setSelectedInbox] = useState<number | null>(null)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [newInboxName, setNewInboxName] = useState("")
-  const [newInboxType, setNewInboxType] = useState("")
-
   const {
     data: inboxes = [],
-    isLoading,
-    error
+    isLoading: inboxesLoading,
+    error: inboxesError,
+    refetch: refetchInboxes
   } = useInboxes(accountId)
 
-  const getChannelTypeText = (channelType: string) => {
-    switch (channelType) {
-      case 'whatsapp':
-        return 'WhatsApp'
-      case 'email':
-        return 'Email'
-      case 'webchat':
-        return 'Web Chat'
-      default:
-        return channelType
-    }
-  }
-
-  const getChannelIcon = (channelType: string) => {
-    switch (channelType) {
-      case 'whatsapp':
-        return '💬'
-      case 'email':
-        return '📧'
-      case 'webchat':
-        return '🌐'
-      default:
-        return '💬'
-    }
-  }
-
-  if (isLoading) {
+  if (inboxesLoading) {
     return (
       <Card>
         <CardHeader>
@@ -86,7 +30,7 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+              <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -94,7 +38,7 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
     )
   }
 
-  if (error) {
+  if (inboxesError) {
     return (
       <Card>
         <CardHeader>
@@ -104,10 +48,41 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-red-600">Erro ao carregar caixas de entrada</p>
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-2">Erro ao carregar caixas de entrada</p>
+            <Button onClick={() => refetchInboxes()} variant="outline">
+              Tentar Novamente
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
+  }
+
+  const getChannelIcon = (channelType: string) => {
+    switch (channelType) {
+      case 'email':
+        return <Mail className="h-4 w-4" />
+      case 'whatsapp':
+        return <MessageSquare className="h-4 w-4" />
+      case 'webchat':
+        return <MessageSquare className="h-4 w-4" />
+      default:
+        return <Inbox className="h-4 w-4" />
+    }
+  }
+
+  const getChannelColor = (channelType: string) => {
+    switch (channelType) {
+      case 'email':
+        return 'bg-blue-100 text-blue-800'
+      case 'whatsapp':
+        return 'bg-green-100 text-green-800'
+      case 'webchat':
+        return 'bg-purple-100 text-purple-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
   }
 
   return (
@@ -116,112 +91,44 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <Inbox className="h-5 w-5" />
-            <span>Gerenciar Caixas de Entrada</span>
+            <span>Caixas de Entrada</span>
             <Badge variant="outline">{inboxes.length} total</Badge>
           </CardTitle>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Caixa
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Caixa de Entrada</DialogTitle>
-                <DialogDescription>
-                  Configure uma nova caixa de entrada para seu atendimento.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome da Caixa</Label>
-                  <Input
-                    id="name"
-                    value={newInboxName}
-                    onChange={(e) => setNewInboxName(e.target.value)}
-                    placeholder="Ex: Suporte Técnico"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="type">Tipo de Canal</Label>
-                  <Select value={newInboxType} onValueChange={setNewInboxType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="webchat">Web Chat</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => {
-                  // Aqui seria implementada a lógica para criar uma nova caixa
-                  console.log('Criar caixa:', { name: newInboxName, type: newInboxType })
-                  setIsCreateDialogOpen(false)
-                  setNewInboxName("")
-                  setNewInboxType("")
-                }}>
-                  Criar Caixa
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Caixa
+          </Button>
         </div>
       </CardHeader>
+      
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        {inboxes.length === 0 ? (
+          <div className="text-center py-8">
+            <Inbox className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Nenhuma caixa de entrada encontrada</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {inboxes.map((inbox) => (
-              <TableRow key={inbox.id}>
-                <TableCell>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-lg">{getChannelIcon(inbox.channel_type)}</span>
-                    <div>
-                      <div className="font-medium">{inbox.name}</div>
-                      <div className="text-sm text-muted-foreground">ID: {inbox.id}</div>
+              <Card key={inbox.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      {getChannelIcon(inbox.channel_type)}
+                      <h3 className="font-semibold">{inbox.name}</h3>
                     </div>
+                    <Badge className={getChannelColor(inbox.channel_type)}>
+                      {inbox.channel_type}
+                    </Badge>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {getChannelTypeText(inbox.channel_type)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="default">
-                    Ativo
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setSelectedInbox(inbox.id)}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  <p className="text-sm text-muted-foreground">
+                    Criado em {new Date(inbox.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                </CardContent>
+              </Card>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
