@@ -23,7 +23,7 @@ import {
   AlertCircle,
   Users
 } from "lucide-react"
-import { useChatwootConversations, useChatwootAgents } from "@/hooks/useChatwootData"
+import { useConversations, useUsers } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
 
 interface ConversationManagementProps {
@@ -46,7 +46,7 @@ export const ConversationManagement = ({
   const filters = {
     account_id: accountId,
     ...(statusFilter !== "all" && { status: statusFilter }),
-    ...(assigneeFilter !== "all" && assigneeFilter !== "unassigned" && { assignee_id: parseInt(assigneeFilter) }),
+    ...(assigneeFilter !== "all" && assigneeFilter !== "unassigned" && { assignee_id: assigneeFilter }),
     ...(selectedInboxId && { inbox_id: selectedInboxId }),
   }
 
@@ -55,12 +55,12 @@ export const ConversationManagement = ({
     isLoading: conversationsLoading,
     error: conversationsError,
     refetch: refetchConversations
-  } = useChatwootConversations(filters)
+  } = useConversations(filters)
 
   const {
     data: agents = [],
     isLoading: agentsLoading
-  } = useChatwootAgents(accountId)
+  } = useUsers(accountId)
 
   const handleConversationClick = (conversation: any) => {
     setSelectedConversation(conversation)
@@ -75,12 +75,12 @@ export const ConversationManagement = ({
   // Filter conversations based on search query and filters
   const filteredConversations = conversations.filter(conversation => {
     const matchesSearch = searchQuery === "" || 
-      conversation.contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conversation.contact.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      conversation.contact?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conversation.contact?.email?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesAssignee = assigneeFilter === "all" || 
       (assigneeFilter === "unassigned" && !conversation.assignee) ||
-      (assigneeFilter !== "unassigned" && conversation.assignee?.id.toString() === assigneeFilter)
+      (assigneeFilter !== "unassigned" && conversation.assignee?.id === assigneeFilter)
 
     return matchesSearch && matchesAssignee
   })
@@ -167,7 +167,7 @@ export const ConversationManagement = ({
                   <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="unassigned">Não atribuídos</SelectItem>
                   {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id.toString()}>
+                    <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
                     </SelectItem>
                   ))}

@@ -6,7 +6,7 @@ import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
 import { InboxManagement } from "@/components/InboxManagement"
 import { ConversationManagement } from "@/components/ConversationManagement"
-import { useChatwootConversations, useChatwootAgents, useChatwootInboxes } from "@/hooks/useChatwootData"
+import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, useUpdateConversationKanbanStage } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
@@ -15,20 +15,20 @@ import { KanbanBoard } from "@/components/KanbanBoard"
 import { Kanban } from "lucide-react"
 
 export default function Dashboard() {
-  const [accountId, setAccountId] = useState("")
+  const [accountId, setAccountId] = useState("1") // Default to account 1 for now
   const [status, setStatus] = useState("all")
   const [assigneeId, setAssigneeId] = useState("all")
   const [inboxId, setInboxId] = useState("all")
   const [activeTab, setActiveTab] = useState("overview")
   const { toast } = useToast()
 
-  const accountIdNumber = accountId ? parseInt(accountId) : 0
+  const accountIdNumber = accountId ? parseInt(accountId) : 1
 
   // Build filters object
   const filters = {
     account_id: accountIdNumber,
     ...(status !== "all" && { status }),
-    ...(assigneeId !== "all" && assigneeId !== "unassigned" && { assignee_id: parseInt(assigneeId) }),
+    ...(assigneeId !== "all" && assigneeId !== "unassigned" && { assignee_id: assigneeId }),
     ...(inboxId !== "all" && { inbox_id: parseInt(inboxId) }),
   }
 
@@ -37,17 +37,20 @@ export default function Dashboard() {
     isLoading: conversationsLoading,
     error: conversationsError,
     refetch: refetchConversations
-  } = useChatwootConversations(filters)
+  } = useConversations(filters)
 
   const {
     data: agents = [],
     isLoading: agentsLoading
-  } = useChatwootAgents(accountIdNumber)
+  } = useUsers(accountIdNumber)
 
   const {
     data: inboxes = [],
     isLoading: inboxesLoading
-  } = useChatwootInboxes(accountIdNumber)
+  } = useInboxes(accountIdNumber)
+
+  const updateStatus = useUpdateConversationStatus()
+  const updateKanbanStage = useUpdateConversationKanbanStage()
 
   const handleRefresh = () => {
     refetchConversations()
@@ -58,14 +61,11 @@ export default function Dashboard() {
   }
 
   const handleStatusChange = (conversationId: number, newStatus: string) => {
-    // Aqui seria implementada a lógica para atualizar o status da conversa
-    console.log(`Updating conversation ${conversationId} to status ${newStatus}`)
-    toast({
-      title: "Status atualizado",
-      description: `Conversa movida para ${newStatus}`,
-    })
-    // Refetch conversations to get updated data
-    refetchConversations()
+    updateStatus.mutate({ conversationId, status: newStatus })
+  }
+
+  const handleKanbanStageChange = (conversationId: number, newStage: string) => {
+    updateKanbanStage.mutate({ conversationId, kanbanStage: newStage })
   }
 
   const filteredConversations = conversations.filter(conversation => {
@@ -87,7 +87,7 @@ export default function Dashboard() {
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight">Painel de Atendimento ao Cliente</h1>
                   <p className="text-muted-foreground">
-                    Gerencie suas conversas do Chatwoot em tempo real
+                    Gerencie suas conversas em tempo real
                   </p>
                 </div>
               </div>
@@ -148,10 +148,9 @@ export default function Dashboard() {
                   <KanbanBoard
                     conversations={filteredConversations}
                     onConversationClick={(conversation) => {
-                      // Aqui seria implementada a lógica para abrir detalhes da conversa
                       console.log('Opening conversation:', conversation.id)
                     }}
-                    onStatusChange={handleStatusChange}
+                    onStatusChange={handleKanbanStageChange}
                     isLoading={conversationsLoading}
                   />
                 </TabsContent>
@@ -173,10 +172,10 @@ export default function Dashboard() {
               <div className="text-center py-12">
                 <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Digite um ID de conta para começar
+                  Selecione uma conta para começar
                 </h3>
                 <p className="text-gray-500">
-                  Informe o ID da sua conta Chatwoot nos filtros acima para visualizar suas conversas
+                  Selecione uma conta nos filtros acima para visualizar suas conversas
                 </p>
               </div>
             )}

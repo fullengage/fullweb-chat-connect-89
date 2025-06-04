@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Inbox, Plus, Settings, Users, MessageCircle } from "lucide-react"
-import { useChatwootInboxes } from "@/hooks/useChatwootData"
+import { useInboxes } from "@/hooks/useSupabaseData"
 
 interface InboxManagementProps {
   accountId: number
@@ -46,20 +46,16 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
     data: inboxes = [],
     isLoading,
     error
-  } = useChatwootInboxes(accountId)
+  } = useInboxes(accountId)
 
   const getChannelTypeText = (channelType: string) => {
     switch (channelType) {
-      case 'Channel::WebWidget':
-        return 'Widget Web'
-      case 'Channel::Email':
+      case 'whatsapp':
+        return 'WhatsApp'
+      case 'email':
         return 'Email'
-      case 'Channel::FacebookPage':
-        return 'Facebook'
-      case 'Channel::TwitterProfile':
-        return 'Twitter'
-      case 'Channel::TwilioSms':
-        return 'SMS'
+      case 'webchat':
+        return 'Web Chat'
       default:
         return channelType
     }
@@ -67,16 +63,12 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
 
   const getChannelIcon = (channelType: string) => {
     switch (channelType) {
-      case 'Channel::WebWidget':
+      case 'whatsapp':
         return '💬'
-      case 'Channel::Email':
+      case 'email':
         return '📧'
-      case 'Channel::FacebookPage':
-        return '📘'
-      case 'Channel::TwitterProfile':
-        return '🐦'
-      case 'Channel::TwilioSms':
-        return '📱'
+      case 'webchat':
+        return '🌐'
       default:
         return '💬'
     }
@@ -158,11 +150,9 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Channel::WebWidget">Widget Web</SelectItem>
-                      <SelectItem value="Channel::Email">Email</SelectItem>
-                      <SelectItem value="Channel::FacebookPage">Facebook</SelectItem>
-                      <SelectItem value="Channel::TwitterProfile">Twitter</SelectItem>
-                      <SelectItem value="Channel::TwilioSms">SMS</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="webchat">Web Chat</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -213,10 +203,8 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={inbox.enable_auto_assignment ? "default" : "secondary"}
-                  >
-                    {inbox.enable_auto_assignment ? "Auto-atribuição" : "Manual"}
+                  <Badge variant="default">
+                    Ativo
                   </Badge>
                 </TableCell>
                 <TableCell>
