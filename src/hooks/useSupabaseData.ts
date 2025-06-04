@@ -62,7 +62,7 @@ interface Conversation {
   assignee?: User
   inbox?: Inbox
   messages?: Message[]
-  unread_count?: number
+  unread_count: number
 }
 
 interface Message {
@@ -153,7 +153,7 @@ export const useConversations = (filters: ConversationFilters) => {
       // Calculate unread count for each conversation
       const conversationsWithUnread = data?.map(conversation => ({
         ...conversation,
-        unread_count: conversation.messages?.filter((msg: Message) => !msg.read_at).length || 0
+        unread_count: conversation.messages?.filter((msg: any) => !msg.read_at && msg.sender_type === 'contact').length || 0
       })) || []
 
       console.log('Conversations fetched successfully:', conversationsWithUnread.length)

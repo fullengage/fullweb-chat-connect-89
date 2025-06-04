@@ -23,7 +23,7 @@ import {
   AlertCircle,
   Users
 } from "lucide-react"
-import { useConversations, useUsers } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, type User } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
 
 interface ConversationManagementProps {
@@ -166,7 +166,7 @@ export const ConversationManagement = ({
                 <SelectContent>
                   <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="unassigned">Não atribuídos</SelectItem>
-                  {agents.map((agent) => (
+                  {agents.map((agent: User) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
                     </SelectItem>

@@ -6,7 +6,7 @@ import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
 import { InboxManagement } from "@/components/InboxManagement"
 import { ConversationManagement } from "@/components/ConversationManagement"
-import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, useUpdateConversationKanbanStage } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, useUpdateConversationKanbanStage, type User } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
@@ -106,7 +106,7 @@ export default function Dashboard() {
               onAssigneeChange={setAssigneeId}
               onInboxChange={setInboxId}
               onAccountIdChange={setAccountId}
-              agents={agents}
+              agents={agents.map((user: User) => ({ id: user.id, name: user.name }))}
               inboxes={inboxes}
               isLoading={agentsLoading || inboxesLoading}
             />
@@ -134,7 +134,7 @@ export default function Dashboard() {
 
                 <TabsContent value="overview" className="space-y-6 mt-6">
                   <ConversationStats
-                    conversations={filteredConversations}
+                    conversations={filteredConversations.map(conv => ({ ...conv, unread_count: conv.unread_count || 0 }))}
                     isLoading={conversationsLoading}
                   />
                   
@@ -146,7 +146,7 @@ export default function Dashboard() {
 
                 <TabsContent value="kanban" className="space-y-6 mt-6">
                   <KanbanBoard
-                    conversations={filteredConversations}
+                    conversations={filteredConversations.map(conv => ({ ...conv, unread_count: conv.unread_count || 0 }))}
                     onConversationClick={(conversation) => {
                       console.log('Opening conversation:', conversation.id)
                     }}
