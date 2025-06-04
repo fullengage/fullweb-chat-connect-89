@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -62,8 +63,9 @@ export const ConversationManagement = ({
     isLoading: agentsLoading
   } = useUsers(accountId)
 
+  // Convert User[] to Agent[] with consistent string id
   const agentsForFilter: Agent[] = agents.map((user: User) => ({
-    id: user.id,
+    id: user.id, // Already string from User type
     name: user.name,
     email: user.email
   }))

@@ -28,3 +28,70 @@ export interface ConversationForStats {
   updated_at: string
   messages: any[]
 }
+
+export interface Conversation {
+  id: number
+  account_id: number
+  inbox_id: number
+  status: string
+  assignee_id?: string
+  contact_id: number
+  display_id?: number
+  last_activity_at: string
+  created_at: string
+  updated_at: string
+  first_reply_created_at?: string
+  waiting_since?: string
+  snoozed_until?: string
+  unread_count?: number
+  additional_attributes?: any
+  custom_attributes?: any
+  inbox?: {
+    id: number
+    name: string
+    channel_type: string
+  }
+  contact?: {
+    id: number
+    name: string
+    email?: string
+    avatar_url?: string
+  }
+  assignee?: {
+    id: string
+    name: string
+    avatar_url?: string
+  }
+  messages?: any[]
+}
+
+export interface User {
+  id: string
+  account_id: number
+  name: string
+  email: string
+  display_name?: string
+  avatar_url?: string
+  role: string
+  confirmed: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Message {
+  id: number
+  content: string
+  message_type: string
+  created_at: string
+  updated_at: string
+  conversation_id: number
+  sender_type: string
+  sender_id?: string
+  content_type: string
+  content_attributes?: any
+  source_id?: string
+  inbox_id: number
+  echo_id?: string
+  status?: string
+  external_source_ids?: any
+}

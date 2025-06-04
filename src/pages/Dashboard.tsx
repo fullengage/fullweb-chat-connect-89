@@ -1,9 +1,11 @@
+
 import { useState } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
 import { ConversationManagement } from "@/components/ConversationManagement"
+import { InboxManagement } from "@/components/InboxManagement"
 import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, useUpdateConversationKanbanStage, type User } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -88,7 +90,8 @@ export default function Dashboard() {
       id: conv.inbox?.id || 0,
       name: conv.inbox?.name || 'Inbox Desconhecido',
       channel_type: conv.inbox?.channel_type || 'webchat'
-    }
+    },
+    messages: conv.messages || []
   }))
 
   const agentsForFilter: Agent[] = agents.map((user: User) => ({
