@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -92,12 +91,13 @@ interface ConversationFilters {
   kanban_stage?: string
 }
 
-// Hook para buscar conversas
+// Hook para buscar conversas com realtime
 export const useConversations = (filters: ConversationFilters) => {
   const { toast } = useToast()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['conversations', filters],
     queryFn: async () => {
       console.log('Fetching conversations with filters:', filters)
@@ -160,8 +160,48 @@ export const useConversations = (filters: ConversationFilters) => {
       return conversationsWithUnread as Conversation[]
     },
     enabled: !!filters.account_id && !!user,
-    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    refetchInterval: 30000,
   })
+
+  // Set up realtime subscription
+  useEffect(() => {
+    if (!user || !filters.account_id) return
+
+    const channel = supabase
+      .channel('conversations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations',
+          filter: `account_id=eq.${filters.account_id}`
+        },
+        () => {
+          // Invalidate and refetch conversations when changes occur
+          queryClient.invalidateQueries({ queryKey: ['conversations'] })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          // Invalidate conversations when messages change too
+          queryClient.invalidateQueries({ queryKey: ['conversations'] })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, filters.account_id, queryClient])
+
+  return query
 }
 
 // Hook para buscar usuários/agentes
@@ -385,6 +425,86 @@ export const useUpdateConversationKanbanStage = () => {
       console.error('Error updating conversation kanban stage:', error)
       toast({
         title: "Erro ao atualizar estágio",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
+  })
+}
+
+// Hook para criar uma nova conversa
+export const useCreateConversation = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (conversationData: {
+      account_id: number
+      contact_id: number
+      inbox_id: number
+      status?: string
+      kanban_stage?: string
+    }) => {
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert(conversationData)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      toast({
+        title: "Conversa criada",
+        description: "Nova conversa criada com sucesso",
+      })
+    },
+    onError: (error: any) => {
+      console.error('Error creating conversation:', error)
+      toast({
+        title: "Erro ao criar conversa",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
+  })
+}
+
+// Hook para enviar mensagem
+export const useSendMessage = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (messageData: {
+      conversation_id: number
+      sender_type: 'contact' | 'agent' | 'system'
+      sender_id?: string
+      content: string
+      attachments?: any
+    }) => {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      toast({
+        title: "Mensagem enviada",
+        description: "Mensagem enviada com sucesso",
+      })
+    },
+    onError: (error: any) => {
+      console.error('Error sending message:', error)
+      toast({
+        title: "Erro ao enviar mensagem",
         description: error.message,
         variant: "destructive",
       })

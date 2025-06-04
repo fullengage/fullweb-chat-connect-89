@@ -1,10 +1,8 @@
-
 import { useState } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
-import { InboxManagement } from "@/components/InboxManagement"
 import { ConversationManagement } from "@/components/ConversationManagement"
 import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, useUpdateConversationKanbanStage, type User } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
@@ -13,6 +11,7 @@ import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { KanbanBoard } from "@/components/KanbanBoard"
 import { Kanban } from "lucide-react"
+import { Agent, ConversationForStats } from "@/types"
 
 export default function Dashboard() {
   const [accountId, setAccountId] = useState("1") // Default to account 1 for now
@@ -75,6 +74,24 @@ export default function Dashboard() {
     return true
   })
 
+  // Convert conversations to the format expected by components
+  const conversationsForStats: ConversationForStats[] = filteredConversations.map(conv => ({
+    ...conv,
+    unread_count: conv.unread_count || 0,
+    contact: {
+      id: conv.contact?.id || 0,
+      name: conv.contact?.name || 'Contato Desconhecido',
+      email: conv.contact?.email,
+      avatar_url: conv.contact?.avatar_url
+    }
+  }))
+
+  const agentsForFilter: Agent[] = agents.map((user: User) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email
+  }))
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -106,7 +123,7 @@ export default function Dashboard() {
               onAssigneeChange={setAssigneeId}
               onInboxChange={setInboxId}
               onAccountIdChange={setAccountId}
-              agents={agents.map((user: User) => ({ id: user.id, name: user.name }))}
+              agents={agentsForFilter}
               inboxes={inboxes}
               isLoading={agentsLoading || inboxesLoading}
             />
@@ -134,7 +151,7 @@ export default function Dashboard() {
 
                 <TabsContent value="overview" className="space-y-6 mt-6">
                   <ConversationStats
-                    conversations={filteredConversations.map(conv => ({ ...conv, unread_count: conv.unread_count || 0 }))}
+                    conversations={conversationsForStats}
                     isLoading={conversationsLoading}
                   />
                   
@@ -146,7 +163,7 @@ export default function Dashboard() {
 
                 <TabsContent value="kanban" className="space-y-6 mt-6">
                   <KanbanBoard
-                    conversations={filteredConversations.map(conv => ({ ...conv, unread_count: conv.unread_count || 0 }))}
+                    conversations={conversationsForStats}
                     onConversationClick={(conversation) => {
                       console.log('Opening conversation:', conversation.id)
                     }}

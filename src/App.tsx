@@ -1,44 +1,60 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Contacts from "./pages/Contacts";
-import Agents from "./pages/Agents";
-import AgentBots from "./pages/AgentBots";
-import Conversations from "./pages/Conversations";
-import Email from "./pages/Email";
-import Analytics from "./pages/Analytics";
-import Teams from "./pages/Teams";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import "./App.css";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <SidebarProvider>
-        <Toaster />
-        <Sonner />
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function AppRoutes() {
+  const { user } = useAuth();
+  
+  return (
+    <Routes>
+      <Route 
+        path="/auth" 
+        element={user ? <Navigate to="/" replace /> : <Auth />} 
+      />
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/conversations" element={<Conversations />} />
-            <Route path="/email" element={<Email />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/agents" element={<Agents />} />
-            <Route path="/agent-bots" element={<AgentBots />} />
-            <Route path="/teams" element={<Teams />} />
-          </Routes>
+          <AppRoutes />
+          <Toaster />
         </BrowserRouter>
-      </SidebarProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

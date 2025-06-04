@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +24,7 @@ import {
 } from "lucide-react"
 import { useConversations, useUsers, type User } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
+import { Agent } from "@/types"
 
 interface ConversationManagementProps {
   accountId: number
@@ -61,6 +61,12 @@ export const ConversationManagement = ({
     data: agents = [],
     isLoading: agentsLoading
   } = useUsers(accountId)
+
+  const agentsForFilter: Agent[] = agents.map((user: User) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email
+  }))
 
   const handleConversationClick = (conversation: any) => {
     setSelectedConversation(conversation)
@@ -166,7 +172,7 @@ export const ConversationManagement = ({
                 <SelectContent>
                   <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="unassigned">Não atribuídos</SelectItem>
-                  {agents.map((agent: User) => (
+                  {agentsForFilter.map((agent: Agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
                     </SelectItem>
@@ -248,7 +254,7 @@ export const ConversationManagement = ({
 
       <ConversationDetail
         conversation={selectedConversation}
-        agents={agents}
+        agents={agentsForFilter}
         isOpen={isDetailOpen}
         onClose={handleCloseDetail}
       />
