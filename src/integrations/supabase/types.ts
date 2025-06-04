@@ -9,70 +9,382 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      companies: {
+      accounts: {
         Row: {
-          address: string | null
-          created_at: string
-          email: string | null
-          id: string
+          created_at: string | null
+          id: number
           name: string
-          phone: string | null
-          updated_at: string
+          plan: string | null
+          slug: string
+          updated_at: string | null
         }
         Insert: {
-          address?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
+          created_at?: string | null
+          id?: number
           name: string
-          phone?: string | null
-          updated_at?: string
+          plan?: string | null
+          slug: string
+          updated_at?: string | null
         }
         Update: {
-          address?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
+          created_at?: string | null
+          id?: number
           name?: string
-          phone?: string | null
-          updated_at?: string
+          plan?: string | null
+          slug?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
-      profiles: {
+      contact_tags: {
         Row: {
-          company_id: string | null
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at: string
+          contact_id: number
+          tag_id: number
         }
         Insert: {
-          company_id?: string | null
-          created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string
+          contact_id: number
+          tag_id: number
         }
         Update: {
-          company_id?: string | null
-          created_at?: string
-          email?: string
-          full_name?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string
+          contact_id?: number
+          tag_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: "contact_tags_contact_id_fkey"
+            columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "companies"
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          account_id: number | null
+          avatar_url: string | null
+          created_at: string | null
+          custom_fields: Json | null
+          email: string | null
+          id: number
+          last_seen: string | null
+          name: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: number | null
+          avatar_url?: string | null
+          created_at?: string | null
+          custom_fields?: Json | null
+          email?: string | null
+          id?: number
+          last_seen?: string | null
+          name?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: number | null
+          avatar_url?: string | null
+          created_at?: string | null
+          custom_fields?: Json | null
+          email?: string | null
+          id?: number
+          last_seen?: string | null
+          name?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_tags: {
+        Row: {
+          conversation_id: number
+          tag_id: number
+        }
+        Insert: {
+          conversation_id: number
+          tag_id: number
+        }
+        Update: {
+          conversation_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_tags_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          account_id: number | null
+          assignee_id: string | null
+          contact_id: number | null
+          created_at: string | null
+          id: number
+          inbox_id: number | null
+          kanban_stage: string | null
+          priority: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: number | null
+          assignee_id?: string | null
+          contact_id?: number | null
+          created_at?: string | null
+          id?: number
+          inbox_id?: number | null
+          kanban_stage?: string | null
+          priority?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: number | null
+          assignee_id?: string | null
+          contact_id?: number | null
+          created_at?: string | null
+          id?: number
+          inbox_id?: number | null
+          kanban_stage?: string | null
+          priority?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inboxes: {
+        Row: {
+          account_id: number | null
+          channel_type: string | null
+          created_at: string | null
+          id: number
+          integration_id: string | null
+          name: string
+          settings: Json | null
+        }
+        Insert: {
+          account_id?: number | null
+          channel_type?: string | null
+          created_at?: string | null
+          id?: number
+          integration_id?: string | null
+          name: string
+          settings?: Json | null
+        }
+        Update: {
+          account_id?: number | null
+          channel_type?: string | null
+          created_at?: string | null
+          id?: number
+          integration_id?: string | null
+          name?: string
+          settings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inboxes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_stages: {
+        Row: {
+          account_id: number | null
+          created_at: string | null
+          id: number
+          name: string
+          position: number
+        }
+        Insert: {
+          account_id?: number | null
+          created_at?: string | null
+          id?: number
+          name: string
+          position: number
+        }
+        Update: {
+          account_id?: number | null
+          created_at?: string | null
+          id?: number
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_stages_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachments: Json | null
+          content: string | null
+          conversation_id: number | null
+          created_at: string | null
+          id: number
+          read_at: string | null
+          sender_id: string | null
+          sender_type: string
+        }
+        Insert: {
+          attachments?: Json | null
+          content?: string | null
+          conversation_id?: number | null
+          created_at?: string | null
+          id?: number
+          read_at?: string | null
+          sender_id?: string | null
+          sender_type: string
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string | null
+          conversation_id?: number | null
+          created_at?: string | null
+          id?: number
+          read_at?: string | null
+          sender_id?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          account_id: number | null
+          color: string
+          id: number
+          name: string
+        }
+        Insert: {
+          account_id?: number | null
+          color: string
+          id?: number
+          name: string
+        }
+        Update: {
+          account_id?: number | null
+          color?: string
+          id?: number
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          account_id: number | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: number | null
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: number | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -82,17 +394,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_company: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      get_user_role: {
-        Args: { user_id: string }
-        Returns: Database["public"]["Enums"]["user_role"]
-      }
+      [_ in never]: never
     }
     Enums: {
-      user_role: "super_admin" | "admin" | "agent"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -207,8 +512,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      user_role: ["super_admin", "admin", "agent"],
-    },
+    Enums: {},
   },
 } as const
