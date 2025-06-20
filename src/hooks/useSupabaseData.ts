@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
@@ -15,12 +14,13 @@ interface Account {
   updated_at: string
 }
 
-interface User {
+export interface User {
   id: string
   account_id: number
   role: 'superadmin' | 'admin' | 'agent'
   name: string
   email: string
+  avatar_url?: string
   created_at: string
   updated_at: string
 }
@@ -70,6 +70,21 @@ interface ConversationFilters {
   status?: string
   assignee_id?: string
   kanban_stage?: string
+}
+
+interface Inbox {
+  id: number
+  name: string
+  channel_type: string
+  created_at?: string
+}
+
+interface KanbanStage {
+  id: number
+  account_id: number
+  name: string
+  position: number
+  created_at: string
 }
 
 // Hook para buscar conversas com realtime
@@ -145,8 +160,11 @@ export const useConversations = (filters: ConversationFilters) => {
 
     console.log('Setting up realtime subscription for conversations')
     
+    // Create a unique channel name based on filters
+    const channelName = `conversations-changes-${filters.account_id}-${Date.now()}`
+    
     const channel = supabase
-      .channel(`conversations-changes-${filters.account_id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -228,10 +246,10 @@ export const useInboxes = (account_id: number) => {
     queryFn: async () => {
       // Return mock data since inboxes table doesn't exist
       return [
-        { id: 1, name: 'WhatsApp', channel_type: 'whatsapp' },
-        { id: 2, name: 'Email', channel_type: 'email' },
-        { id: 3, name: 'Website', channel_type: 'webchat' }
-      ]
+        { id: 1, name: 'WhatsApp', channel_type: 'whatsapp', created_at: new Date().toISOString() },
+        { id: 2, name: 'Email', channel_type: 'email', created_at: new Date().toISOString() },
+        { id: 3, name: 'Website', channel_type: 'webchat', created_at: new Date().toISOString() }
+      ] as Inbox[]
     },
     enabled: !!account_id,
     staleTime: 5 * 60 * 1000,
@@ -287,7 +305,7 @@ export const useKanbanStages = (account_id: number) => {
         { id: 2, account_id, name: 'Em Andamento', position: 2, created_at: new Date().toISOString() },
         { id: 3, account_id, name: 'Aguardando', position: 3, created_at: new Date().toISOString() },
         { id: 4, account_id, name: 'Resolvido', position: 4, created_at: new Date().toISOString() }
-      ]
+      ] as KanbanStage[]
     },
     enabled: !!account_id,
     staleTime: 5 * 60 * 1000,
@@ -456,5 +474,7 @@ export type {
   Contact, 
   Conversation, 
   Message,
-  ConversationFilters 
+  ConversationFilters,
+  Inbox,
+  KanbanStage
 }
