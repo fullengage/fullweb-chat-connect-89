@@ -470,7 +470,6 @@ export const useSendMessage = () => {
 // Export dos tipos para uso em outros arquivos
 export type { 
   Account, 
-  User, 
   Contact, 
   Conversation, 
   Message,

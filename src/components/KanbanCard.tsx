@@ -7,34 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Clock, User, GripVertical } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
-
-interface Conversation {
-  id: number
-  status: string
-  unread_count: number
-  contact: {
-    id: number
-    name: string
-    email?: string
-    avatar_url?: string
-  }
-  assignee?: {
-    id: number
-    name: string
-    avatar_url?: string
-  }
-  inbox: {
-    id: number
-    name: string
-    channel_type: string
-  }
-  updated_at: string
-  messages: any[]
-}
+import { ConversationForStats } from "@/types"
 
 interface KanbanCardProps {
   id: string
-  conversation: Conversation
+  conversation: ConversationForStats
   onClick?: () => void
   isDragging?: boolean
 }
