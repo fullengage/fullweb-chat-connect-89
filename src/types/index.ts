@@ -32,11 +32,11 @@ export interface ConversationForStats {
 export interface Conversation {
   id: number
   account_id: number
-  inbox_id: number
+  contact_id: number
   status: string
   assignee_id?: string
-  contact_id: number
-  display_id?: number
+  kanban_stage: string
+  priority?: 'high' | 'medium' | 'low'
   last_activity_at: string
   created_at: string
   updated_at: string
@@ -46,11 +46,6 @@ export interface Conversation {
   unread_count?: number
   additional_attributes?: any
   custom_attributes?: any
-  inbox?: {
-    id: number
-    name: string
-    channel_type: string
-  }
   contact?: {
     id: number
     name: string
@@ -90,8 +85,13 @@ export interface Message {
   content_type: string
   content_attributes?: any
   source_id?: string
-  inbox_id: number
   echo_id?: string
   status?: string
   external_source_ids?: any
+}
+
+export interface Inbox {
+  id: number
+  name: string
+  channel_type: string
 }

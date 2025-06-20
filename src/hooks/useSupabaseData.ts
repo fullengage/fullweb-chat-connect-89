@@ -38,21 +38,10 @@ interface Contact {
   updated_at: string
 }
 
-interface Inbox {
-  id: number
-  account_id: number
-  name: string
-  channel_type: 'whatsapp' | 'email' | 'webchat'
-  integration_id?: string
-  settings?: any
-  created_at: string
-}
-
 interface Conversation {
   id: number
   account_id: number
   contact_id: number
-  inbox_id: number
   status: 'open' | 'pending' | 'resolved' | 'archived'
   assignee_id?: string
   kanban_stage: string
@@ -61,7 +50,6 @@ interface Conversation {
   updated_at: string
   contact?: Contact
   assignee?: User
-  inbox?: Inbox
   messages?: Message[]
   unread_count: number
 }
@@ -77,19 +65,10 @@ interface Message {
   created_at: string
 }
 
-interface KanbanStage {
-  id: number
-  account_id: number
-  name: string
-  position: number
-  created_at: string
-}
-
 interface ConversationFilters {
   account_id: number
   status?: string
   assignee_id?: string
-  inbox_id?: number
   kanban_stage?: string
 }
 
@@ -114,7 +93,6 @@ export const useConversations = (filters: ConversationFilters) => {
           *,
           contact:contacts(*),
           assignee:users(*),
-          inbox:inboxes(*),
           messages(*)
         `)
         .eq('account_id', filters.account_id)
@@ -130,10 +108,6 @@ export const useConversations = (filters: ConversationFilters) => {
         } else {
           query = query.eq('assignee_id', filters.assignee_id)
         }
-      }
-
-      if (filters.inbox_id) {
-        query = query.eq('inbox_id', filters.inbox_id)
       }
 
       if (filters.kanban_stage) {
@@ -169,8 +143,10 @@ export const useConversations = (filters: ConversationFilters) => {
   useEffect(() => {
     if (!user || !filters.account_id) return
 
+    console.log('Setting up realtime subscription for conversations')
+    
     const channel = supabase
-      .channel('conversations-changes')
+      .channel(`conversations-changes-${filters.account_id}`)
       .on(
         'postgres_changes',
         {
@@ -180,7 +156,7 @@ export const useConversations = (filters: ConversationFilters) => {
           filter: `account_id=eq.${filters.account_id}`
         },
         () => {
-          // Invalidate and refetch conversations when changes occur
+          console.log('Conversations realtime update received')
           queryClient.invalidateQueries({ queryKey: ['conversations'] })
         }
       )
@@ -192,13 +168,14 @@ export const useConversations = (filters: ConversationFilters) => {
           table: 'messages'
         },
         () => {
-          // Invalidate conversations when messages change too
+          console.log('Messages realtime update received')
           queryClient.invalidateQueries({ queryKey: ['conversations'] })
         }
       )
       .subscribe()
 
     return () => {
+      console.log('Cleaning up realtime subscription')
       supabase.removeChannel(channel)
     }
   }, [user, filters.account_id, queryClient])
@@ -240,45 +217,24 @@ export const useUsers = (account_id: number) => {
       return data as User[]
     },
     enabled: !!account_id && !!user,
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 
-// Hook para buscar inboxes
+// Mock hook for inboxes since table doesn't exist
 export const useInboxes = (account_id: number) => {
-  const { toast } = useToast()
-  const { user } = useAuth()
-
   return useQuery({
     queryKey: ['inboxes', account_id],
     queryFn: async () => {
-      console.log('Fetching inboxes for account:', account_id)
-      
-      if (!user) {
-        throw new Error('User not authenticated')
-      }
-
-      const { data, error } = await supabase
-        .from('inboxes')
-        .select('*')
-        .eq('account_id', account_id)
-        .order('name')
-
-      if (error) {
-        console.error('Database error:', error)
-        toast({
-          title: "Erro ao buscar inboxes",
-          description: error.message,
-          variant: "destructive",
-        })
-        throw error
-      }
-
-      console.log('Inboxes fetched successfully:', data?.length)
-      return data as Inbox[]
+      // Return mock data since inboxes table doesn't exist
+      return [
+        { id: 1, name: 'WhatsApp', channel_type: 'whatsapp' },
+        { id: 2, name: 'Email', channel_type: 'email' },
+        { id: 3, name: 'Website', channel_type: 'webchat' }
+      ]
     },
-    enabled: !!account_id && !!user,
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+    enabled: !!account_id,
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -316,45 +272,25 @@ export const useContacts = (account_id: number) => {
       return data as Contact[]
     },
     enabled: !!account_id && !!user,
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 
-// Hook para buscar estágios do kanban
+// Mock hook for kanban stages since table doesn't exist
 export const useKanbanStages = (account_id: number) => {
-  const { toast } = useToast()
-  const { user } = useAuth()
-
   return useQuery({
     queryKey: ['kanban-stages', account_id],
     queryFn: async () => {
-      console.log('Fetching kanban stages for account:', account_id)
-      
-      if (!user) {
-        throw new Error('User not authenticated')
-      }
-
-      const { data, error } = await supabase
-        .from('kanban_stages')
-        .select('*')
-        .eq('account_id', account_id)
-        .order('position')
-
-      if (error) {
-        console.error('Database error:', error)
-        toast({
-          title: "Erro ao buscar estágios do kanban",
-          description: error.message,
-          variant: "destructive",
-        })
-        throw error
-      }
-
-      console.log('Kanban stages fetched successfully:', data?.length)
-      return data as KanbanStage[]
+      // Return mock data since kanban_stages table doesn't exist
+      return [
+        { id: 1, account_id, name: 'Novo', position: 1, created_at: new Date().toISOString() },
+        { id: 2, account_id, name: 'Em Andamento', position: 2, created_at: new Date().toISOString() },
+        { id: 3, account_id, name: 'Aguardando', position: 3, created_at: new Date().toISOString() },
+        { id: 4, account_id, name: 'Resolvido', position: 4, created_at: new Date().toISOString() }
+      ]
     },
-    enabled: !!account_id && !!user,
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+    enabled: !!account_id,
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -443,7 +379,6 @@ export const useCreateConversation = () => {
     mutationFn: async (conversationData: {
       account_id: number
       contact_id: number
-      inbox_id: number
       status?: string
       kanban_stage?: string
     }) => {
@@ -519,9 +454,7 @@ export type {
   Account, 
   User, 
   Contact, 
-  Inbox, 
   Conversation, 
-  Message, 
-  KanbanStage,
+  Message,
   ConversationFilters 
 }

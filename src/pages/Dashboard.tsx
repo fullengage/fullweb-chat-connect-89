@@ -16,7 +16,7 @@ import { Kanban } from "lucide-react"
 import { Agent, ConversationForStats } from "@/types"
 
 export default function Dashboard() {
-  const [accountId, setAccountId] = useState("1") // Default to account 1 for now
+  const [accountId, setAccountId] = useState("1")
   const [status, setStatus] = useState("all")
   const [assigneeId, setAssigneeId] = useState("all")
   const [inboxId, setInboxId] = useState("all")
@@ -30,7 +30,6 @@ export default function Dashboard() {
     account_id: accountIdNumber,
     ...(status !== "all" && { status }),
     ...(assigneeId !== "all" && assigneeId !== "unassigned" && { assignee_id: assigneeId }),
-    ...(inboxId !== "all" && { inbox_id: parseInt(inboxId) }),
   }
 
   const {
@@ -86,10 +85,15 @@ export default function Dashboard() {
       email: conv.contact?.email,
       avatar_url: conv.contact?.avatar_url
     },
+    assignee: conv.assignee ? {
+      id: conv.assignee.id,
+      name: conv.assignee.name,
+      avatar_url: conv.assignee.avatar_url
+    } : undefined,
     inbox: {
-      id: conv.inbox?.id || 0,
-      name: conv.inbox?.name || 'Inbox Desconhecido',
-      channel_type: conv.inbox?.channel_type || 'webchat'
+      id: 1, // Mock inbox id since we don't have inbox_id in conversations table
+      name: 'Inbox Padrão',
+      channel_type: 'webchat'
     },
     messages: conv.messages || []
   }))

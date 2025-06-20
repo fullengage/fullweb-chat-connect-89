@@ -48,7 +48,6 @@ export const ConversationManagement = ({
     account_id: accountId,
     ...(statusFilter !== "all" && { status: statusFilter }),
     ...(assigneeFilter !== "all" && assigneeFilter !== "unassigned" && { assignee_id: assigneeFilter }),
-    ...(selectedInboxId && { inbox_id: selectedInboxId }),
   }
 
   const {
@@ -65,7 +64,7 @@ export const ConversationManagement = ({
 
   // Convert User[] to Agent[] with consistent string id
   const agentsForFilter: Agent[] = agents.map((user: User) => ({
-    id: user.id, // Already string from User type
+    id: user.id,
     name: user.name,
     email: user.email
   }))

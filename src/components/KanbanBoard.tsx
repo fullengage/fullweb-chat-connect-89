@@ -19,34 +19,11 @@ import { Badge } from "@/components/ui/badge"
 import { KanbanColumn } from "./KanbanColumn"
 import { KanbanCard } from "./KanbanCard"
 import { Clock, AlertCircle, CheckCircle, Users } from "lucide-react"
-
-interface Conversation {
-  id: number
-  status: string
-  unread_count: number
-  contact: {
-    id: number
-    name: string
-    email?: string
-    avatar_url?: string
-  }
-  assignee?: {
-    id: number
-    name: string
-    avatar_url?: string
-  }
-  inbox: {
-    id: number
-    name: string
-    channel_type: string
-  }
-  updated_at: string
-  messages: any[]
-}
+import { ConversationForStats } from "@/types"
 
 interface KanbanBoardProps {
-  conversations: Conversation[]
-  onConversationClick: (conversation: Conversation) => void
+  conversations: ConversationForStats[]
+  onConversationClick: (conversation: ConversationForStats) => void
   onStatusChange?: (conversationId: number, newStatus: string) => void
   isLoading?: boolean
 }
@@ -92,7 +69,7 @@ export const KanbanBoard = ({
   onStatusChange,
   isLoading 
 }: KanbanBoardProps) => {
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
+  const [activeConversation, setActiveConversation] = useState<ConversationForStats | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
