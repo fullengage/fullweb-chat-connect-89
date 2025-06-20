@@ -1,5 +1,6 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -92,6 +93,7 @@ export const useConversations = (filters: ConversationFilters) => {
   const { toast } = useToast()
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const channelRef = useRef<any>(null)
 
   const query = useQuery({
     queryKey: ['conversations', filters],
@@ -158,10 +160,17 @@ export const useConversations = (filters: ConversationFilters) => {
   useEffect(() => {
     if (!user || !filters.account_id) return
 
+    // Clean up existing channel if it exists
+    if (channelRef.current) {
+      console.log('Cleaning up existing realtime subscription')
+      supabase.removeChannel(channelRef.current)
+      channelRef.current = null
+    }
+
     console.log('Setting up realtime subscription for conversations')
     
-    // Create a unique channel name based on filters
-    const channelName = `conversations-changes-${filters.account_id}-${Date.now()}`
+    // Create a unique channel name
+    const channelName = `conversations-${filters.account_id}-${user.id}`
     
     const channel = supabase
       .channel(channelName)
@@ -192,11 +201,16 @@ export const useConversations = (filters: ConversationFilters) => {
       )
       .subscribe()
 
+    channelRef.current = channel
+
     return () => {
       console.log('Cleaning up realtime subscription')
-      supabase.removeChannel(channel)
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
-  }, [user, filters.account_id, queryClient])
+  }, [user?.id, filters.account_id, queryClient]) // Simplified dependencies
 
   return query
 }
