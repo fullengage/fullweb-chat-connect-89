@@ -1,18 +1,35 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Mail, Phone, Calendar } from "lucide-react";
-import { useContacts, useUsers } from "@/hooks/useSupabaseData";
-import type { User as SupabaseUser } from "@/hooks/useSupabaseData";
+import { useContacts } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const ContactStats = () => {
   const { user: authUser } = useAuth();
+  const [currentUserAccountId, setCurrentUserAccountId] = useState<number>(0);
   
-  // Get the user data from our users table to access account_id
-  const { data: users = [] } = useUsers(0); // We'll filter this properly
-  const currentUser = users.find((u: SupabaseUser) => u.auth_user_id === authUser?.id);
+  // Buscar account_id do usuário atual
+  useEffect(() => {
+    const fetchUserAccountId = async () => {
+      if (!authUser) return;
+      
+      const { data: userData } = await supabase
+        .from('users')
+        .select('account_id')
+        .eq('auth_user_id', authUser.id)
+        .single();
+      
+      if (userData) {
+        setCurrentUserAccountId(userData.account_id);
+      }
+    };
+    
+    fetchUserAccountId();
+  }, [authUser]);
   
-  const { data: contacts = [], isLoading } = useContacts(currentUser?.account_id || 0);
+  const { data: contacts = [], isLoading } = useContacts(currentUserAccountId);
 
   // Calcular estatísticas baseadas nos dados reais
   const totalContacts = contacts.length;

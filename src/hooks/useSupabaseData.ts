@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
@@ -21,6 +22,7 @@ export interface User {
   name: string
   email: string
   avatar_url?: string
+  auth_user_id?: string
   created_at: string
   updated_at: string
 }
@@ -90,20 +92,32 @@ interface KanbanStage {
 // Global channel registry to prevent duplicate subscriptions
 const activeChannels = new Map<string, any>()
 
-// Hook para buscar conversas com realtime
+// Hook para buscar conversas com realtime baseado no papel do usuário
 export const useConversations = (filters: ConversationFilters) => {
   const { toast } = useToast()
-  const { user } = useAuth()
+  const { user: authUser } = useAuth()
   const queryClient = useQueryClient()
   const hookInstanceId = useRef(Math.random().toString(36).substr(2, 9))
 
   const query = useQuery({
-    queryKey: ['conversations', filters],
+    queryKey: ['conversations', filters, authUser?.id],
     queryFn: async () => {
       console.log('Fetching conversations with filters:', filters)
       
-      if (!user) {
+      if (!authUser) {
         throw new Error('User not authenticated')
+      }
+
+      // Buscar dados do usuário na nossa tabela users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .single()
+
+      if (userError || !userData) {
+        console.error('User data error:', userError)
+        throw new Error('User data not found')
       }
 
       let query = supabase
@@ -114,9 +128,27 @@ export const useConversations = (filters: ConversationFilters) => {
           assignee:users(*),
           messages(*)
         `)
-        .eq('account_id', filters.account_id)
         .order('updated_at', { ascending: false })
 
+      // Aplicar filtros baseados no papel do usuário
+      if (userData.role === 'superadmin') {
+        // Superadmin pode ver conversas de qualquer conta se especificada
+        if (filters.account_id) {
+          query = query.eq('account_id', filters.account_id)
+        }
+      } else if (userData.role === 'admin') {
+        // Admin pode ver todas as conversas da sua conta
+        query = query.eq('account_id', userData.account_id)
+      } else if (userData.role === 'agent') {
+        // Agent só pode ver conversas da sua conta que estão atribuídas a ele ou não atribuídas
+        query = query
+          .eq('account_id', userData.account_id)
+          .or(`assignee_id.eq.${userData.id},assignee_id.is.null`)
+      } else {
+        throw new Error('Invalid user role')
+      }
+
+      // Aplicar filtros adicionais
       if (filters.status && filters.status !== 'all') {
         query = query.eq('status', filters.status)
       }
@@ -154,13 +186,13 @@ export const useConversations = (filters: ConversationFilters) => {
       console.log('Conversations fetched successfully:', conversationsWithUnread.length)
       return conversationsWithUnread as Conversation[]
     },
-    enabled: !!filters.account_id && !!user,
+    enabled: !!authUser && !!filters.account_id,
     refetchInterval: 30000,
   })
 
   // Set up realtime subscription with improved channel management
   useEffect(() => {
-    if (!user || !filters.account_id) return
+    if (!authUser || !filters.account_id) return
 
     const channelKey = `conversations-${filters.account_id}`
     const instanceChannelKey = `${channelKey}-${hookInstanceId.current}`
@@ -230,30 +262,54 @@ export const useConversations = (filters: ConversationFilters) => {
         }, 1000)
       }
     }
-  }, [user?.id, filters.account_id, queryClient])
+  }, [authUser?.id, filters.account_id, queryClient])
 
   return query
 }
 
-// Hook para buscar usuários/agentes
+// Hook para buscar usuários/agentes baseado no papel do usuário atual
 export const useUsers = (account_id: number) => {
   const { toast } = useToast()
-  const { user } = useAuth()
+  const { user: authUser } = useAuth()
 
   return useQuery({
-    queryKey: ['users', account_id],
+    queryKey: ['users', account_id, authUser?.id],
     queryFn: async () => {
       console.log('Fetching users for account:', account_id)
       
-      if (!user) {
+      if (!authUser) {
         throw new Error('User not authenticated')
       }
 
-      const { data, error } = await supabase
+      // Buscar dados do usuário atual
+      const { data: currentUserData, error: currentUserError } = await supabase
         .from('users')
         .select('*')
-        .eq('account_id', account_id)
+        .eq('auth_user_id', authUser.id)
+        .single()
+
+      if (currentUserError || !currentUserData) {
+        console.error('Current user data error:', currentUserError)
+        throw new Error('Current user data not found')
+      }
+
+      let query = supabase
+        .from('users')
+        .select('*')
         .order('name')
+
+      // Aplicar filtros baseados no papel do usuário
+      if (currentUserData.role === 'superadmin') {
+        // Superadmin pode ver usuários de qualquer conta se especificada
+        if (account_id) {
+          query = query.eq('account_id', account_id)
+        }
+      } else {
+        // Admin e Agent só podem ver usuários da sua própria conta
+        query = query.eq('account_id', currentUserData.account_id)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('Database error:', error)
@@ -268,7 +324,7 @@ export const useUsers = (account_id: number) => {
       console.log('Users fetched successfully:', data?.length)
       return data as User[]
     },
-    enabled: !!account_id && !!user,
+    enabled: !!authUser,
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -290,25 +346,49 @@ export const useInboxes = (account_id: number) => {
   })
 }
 
-// Hook para buscar contatos
+// Hook para buscar contatos baseado no papel do usuário
 export const useContacts = (account_id: number) => {
   const { toast } = useToast()
-  const { user } = useAuth()
+  const { user: authUser } = useAuth()
 
   return useQuery({
-    queryKey: ['contacts', account_id],
+    queryKey: ['contacts', account_id, authUser?.id],
     queryFn: async () => {
       console.log('Fetching contacts for account:', account_id)
       
-      if (!user) {
+      if (!authUser) {
         throw new Error('User not authenticated')
       }
 
-      const { data, error } = await supabase
+      // Buscar dados do usuário atual
+      const { data: currentUserData, error: currentUserError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .single()
+
+      if (currentUserError || !currentUserData) {
+        console.error('Current user data error:', currentUserError)
+        throw new Error('Current user data not found')
+      }
+
+      let query = supabase
         .from('contacts')
         .select('*')
-        .eq('account_id', account_id)
         .order('name')
+
+      // Aplicar filtros baseados no papel do usuário
+      if (currentUserData.role === 'superadmin') {
+        // Superadmin pode ver contatos de qualquer conta se especificada
+        if (account_id) {
+          query = query.eq('account_id', account_id)
+        }
+      } else {
+        // Admin e Agent só podem ver contatos da sua própria conta
+        query = query.eq('account_id', currentUserData.account_id)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('Database error:', error)
@@ -323,7 +403,7 @@ export const useContacts = (account_id: number) => {
       console.log('Contacts fetched successfully:', data?.length)
       return data as Contact[]
     },
-    enabled: !!account_id && !!user,
+    enabled: !!authUser,
     staleTime: 5 * 60 * 1000,
   })
 }
