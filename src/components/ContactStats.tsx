@@ -1,12 +1,17 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Mail, Phone, Calendar } from "lucide-react";
-import { useContacts } from "@/hooks/useSupabaseData";
+import { useContacts, useUsers } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const ContactStats = () => {
-  const { user } = useAuth();
-  const { data: contacts = [], isLoading } = useContacts(user?.account_id || 0);
+  const { user: authUser } = useAuth();
+  
+  // Get the user data from our users table to access account_id
+  const { data: users = [] } = useUsers(0); // We'll filter this properly
+  const currentUser = users.find(u => u.auth_user_id === authUser?.id);
+  
+  const { data: contacts = [], isLoading } = useContacts(currentUser?.account_id || 0);
 
   // Calcular estatísticas baseadas nos dados reais
   const totalContacts = contacts.length;
