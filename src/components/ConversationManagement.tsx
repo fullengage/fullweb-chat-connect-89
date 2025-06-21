@@ -24,11 +24,17 @@ import {
 } from "lucide-react"
 import { useConversations, useUsers, type User } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
-import { Agent } from "@/types"
 
 interface ConversationManagementProps {
   accountId: number
   selectedInboxId?: number
+}
+
+// Define Agent type locally to match what ConversationDetail expects
+interface LocalAgent {
+  id: number
+  name: string
+  email: string
 }
 
 export const ConversationManagement = ({ 
@@ -61,9 +67,9 @@ export const ConversationManagement = ({
     isLoading: agentsLoading
   } = useUsers(accountId)
 
-  // Convert User[] to Agent[] format expected by components
-  const agentsForFilter: Agent[] = agents.map((user: User) => ({
-    id: user.id,
+  // Convert User[] to LocalAgent[] format expected by ConversationDetail
+  const agentsForFilter: LocalAgent[] = agents.map((user: User, index: number) => ({
+    id: index + 1, // Use index as number ID since ConversationDetail expects number
     name: user.name,
     email: user.email
   }))
@@ -173,7 +179,7 @@ export const ConversationManagement = ({
                   <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="unassigned">Não atribuídos</SelectItem>
                   {agentsForFilter.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
+                    <SelectItem key={agent.id} value={agent.id.toString()}>
                       {agent.name}
                     </SelectItem>
                   ))}

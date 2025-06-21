@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -12,7 +13,14 @@ import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { KanbanBoard } from "@/components/KanbanBoard"
 import { Kanban } from "lucide-react"
-import { Agent, ConversationForStats } from "@/types"
+import { ConversationForStats } from "@/types"
+
+// Define Agent type locally to match what ChatwootFilters expects
+interface LocalAgent {
+  id: number
+  name: string
+  email: string
+}
 
 export default function Dashboard() {
   const [accountId, setAccountId] = useState("1")
@@ -97,8 +105,8 @@ export default function Dashboard() {
     messages: conv.messages || []
   }))
 
-  const agentsForFilter: Agent[] = agents.map((user: User) => ({
-    id: user.id,
+  const agentsForFilter: LocalAgent[] = agents.map((user: User, index: number) => ({
+    id: index + 1, // Use index as number ID since ChatwootFilters expects number
     name: user.name,
     email: user.email
   }))
