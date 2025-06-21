@@ -1,6 +1,6 @@
 
 import { ContactCard } from "./ContactCard";
-import { useContacts, useUsers } from "@/hooks/useSupabaseData";
+import { useContacts, useUsers, type User } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ContactsListProps {
@@ -13,7 +13,7 @@ export const ContactsList = ({ searchTerm, tagFilter }: ContactsListProps) => {
   
   // Get the user data from our users table to access account_id
   const { data: users = [] } = useUsers(0); // We'll filter this properly
-  const currentUser = users.find(u => u.auth_user_id === authUser?.id);
+  const currentUser = users.find((u: User) => u.auth_user_id === authUser?.id);
   
   const { data: contacts = [], isLoading, error } = useContacts(currentUser?.account_id || 0);
 
