@@ -4,14 +4,12 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Plus, Search } from "lucide-react";
 import { ContactStats } from "@/components/ContactStats";
 import { ContactsList } from "@/components/ContactsList";
 
 const Contacts = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [tagFilter, setTagFilter] = useState("all");
 
   return (
     <SidebarProvider>
@@ -53,21 +51,10 @@ const Contacts = () => {
                   className="pl-10"
                 />
               </div>
-              <Select value={tagFilter} onValueChange={setTagFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as tags</SelectItem>
-                  <SelectItem value="cliente">Cliente</SelectItem>
-                  <SelectItem value="prospect">Prospect</SelectItem>
-                  <SelectItem value="parceiro">Parceiro</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             {/* Contacts List */}
-            <ContactsList searchTerm={searchTerm} tagFilter={tagFilter} />
+            <ContactsList searchTerm={searchTerm} tagFilter="all" />
           </div>
         </SidebarInset>
       </div>
