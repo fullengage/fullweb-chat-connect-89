@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Mail, Phone, Calendar } from "lucide-react";
 import { useContacts, useUsers } from "@/hooks/useSupabaseData";
-import type { User } from "@/hooks/useSupabaseData";
+import type { User as SupabaseUser } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const ContactStats = () => {
@@ -10,7 +10,7 @@ export const ContactStats = () => {
   
   // Get the user data from our users table to access account_id
   const { data: users = [] } = useUsers(0); // We'll filter this properly
-  const currentUser = users.find((u: User) => u.auth_user_id === authUser?.id);
+  const currentUser = users.find((u: SupabaseUser) => u.auth_user_id === authUser?.id);
   
   const { data: contacts = [], isLoading } = useContacts(currentUser?.account_id || 0);
 
