@@ -93,7 +93,7 @@ export default function Dashboard() {
       avatar_url: conv.contact?.avatar_url
     },
     assignee: conv.assignee ? {
-      id: conv.assignee.id,
+      id: parseInt(conv.assignee.id) || 0, // Convert string ID to number
       name: conv.assignee.name,
       avatar_url: conv.assignee.avatar_url
     } : undefined,

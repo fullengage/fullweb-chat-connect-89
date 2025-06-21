@@ -1,4 +1,3 @@
-
 export interface Agent {
   id: string
   name: string
@@ -16,7 +15,7 @@ export interface ConversationForStats {
     avatar_url?: string
   }
   assignee?: {
-    id: string
+    id: number
     name: string
     avatar_url?: string
   }
