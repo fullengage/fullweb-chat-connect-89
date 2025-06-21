@@ -13,7 +13,7 @@ import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { KanbanBoard } from "@/components/KanbanBoard"
 import { Kanban } from "lucide-react"
-import { Agent, ConversationForStats } from "@/types"
+import { ConversationForStats } from "@/types"
 
 export default function Dashboard() {
   const [accountId, setAccountId] = useState("1")
@@ -98,7 +98,7 @@ export default function Dashboard() {
     messages: conv.messages || []
   }))
 
-  const agentsForFilter: Agent[] = agents.map((user: User) => ({
+  const agentsForFilter = agents.map((user: User) => ({
     id: user.id,
     name: user.name,
     email: user.email
