@@ -1,7 +1,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Mail, Phone, Calendar } from "lucide-react";
-import { useContacts, useUsers, type User } from "@/hooks/useSupabaseData";
+import { useContacts, useUsers } from "@/hooks/useSupabaseData";
+import type { User } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const ContactStats = () => {

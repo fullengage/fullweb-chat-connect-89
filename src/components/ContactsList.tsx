@@ -1,6 +1,7 @@
 
 import { ContactCard } from "./ContactCard";
-import { useContacts, useUsers, type User } from "@/hooks/useSupabaseData";
+import { useContacts, useUsers } from "@/hooks/useSupabaseData";
+import type { User } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ContactsListProps {
