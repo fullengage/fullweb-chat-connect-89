@@ -8,7 +8,7 @@ export interface Agent {
 export interface ConversationForStats {
   id: number
   status: string
-  unread_count: number
+  unread_count?: number
   contact: {
     id: number
     name: string

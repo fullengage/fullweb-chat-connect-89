@@ -227,10 +227,7 @@ export default function Conversations() {
             {accountIdNumber > 0 ? (
               <div className="space-y-6">
                 <ConversationStats
-                  conversations={filteredConversations.map(conv => ({
-                    ...conv,
-                    unread_count: conv.unread_count || 0
-                  }))}
+                  conversations={filteredConversations}
                   isLoading={conversationsLoading}
                 />
                 
