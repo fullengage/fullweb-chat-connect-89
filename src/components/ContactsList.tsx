@@ -4,15 +4,44 @@ import { useContacts } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { EditContactDialog } from "./EditContactDialog";
+
+interface Contact {
+  id: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  created_at: string;
+}
+
+interface ContactForCard {
+  id: string;
+  initials: string;
+  name: string;
+  email: string;
+  phone: string;
+  createdAt: string;
+  tag?: string;
+}
 
 interface ContactsListProps {
   searchTerm: string;
   tagFilter: string;
+  contacts?: Contact[];
+  onContactUpdate?: () => void;
 }
 
-export const ContactsList = ({ searchTerm, tagFilter }: ContactsListProps) => {
+export const ContactsList = ({ 
+  searchTerm, 
+  tagFilter, 
+  contacts: externalContacts,
+  onContactUpdate 
+}: ContactsListProps) => {
   const { user: authUser } = useAuth();
   const [currentUserAccountId, setCurrentUserAccountId] = useState<number>(0);
+  const [localContacts, setLocalContacts] = useState<Contact[]>([]);
+  const [editingContact, setEditingContact] = useState<ContactForCard | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   // Buscar account_id do usuário atual
   useEffect(() => {
@@ -33,7 +62,61 @@ export const ContactsList = ({ searchTerm, tagFilter }: ContactsListProps) => {
     fetchUserAccountId();
   }, [authUser]);
   
-  const { data: contacts = [], isLoading, error } = useContacts(currentUserAccountId);
+  const { data: fetchedContacts = [], isLoading, error } = useContacts(currentUserAccountId);
+
+  // Use external contacts if provided, otherwise use fetched contacts
+  const contactsToUse = externalContacts || localContacts.length > 0 ? localContacts : fetchedContacts;
+
+  // Initialize local contacts when fetched contacts change
+  useEffect(() => {
+    if (!externalContacts && fetchedContacts.length > 0) {
+      setLocalContacts(fetchedContacts);
+    }
+  }, [fetchedContacts, externalContacts]);
+
+  // Use external contacts if provided
+  useEffect(() => {
+    if (externalContacts) {
+      setLocalContacts(externalContacts);
+    }
+  }, [externalContacts]);
+
+  const handleEditContact = (contact: ContactForCard) => {
+    setEditingContact(contact);
+    setEditDialogOpen(true);
+  };
+
+  const handleContactUpdated = (updatedContact: ContactForCard) => {
+    const updatedContactData = {
+      id: parseInt(updatedContact.id),
+      name: updatedContact.name,
+      email: updatedContact.email,
+      phone: updatedContact.phone,
+      created_at: new Date().toISOString(),
+    };
+
+    setLocalContacts(prev => 
+      prev.map(contact => 
+        contact.id === parseInt(updatedContact.id) 
+          ? updatedContactData
+          : contact
+      )
+    );
+
+    if (onContactUpdate) {
+      onContactUpdate();
+    }
+  };
+
+  const handleDeleteContact = (contactId: string) => {
+    setLocalContacts(prev => 
+      prev.filter(contact => contact.id !== parseInt(contactId))
+    );
+
+    if (onContactUpdate) {
+      onContactUpdate();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -68,7 +151,7 @@ export const ContactsList = ({ searchTerm, tagFilter }: ContactsListProps) => {
   }
 
   // Filtrar contatos baseado na busca
-  const filteredContacts = contacts.filter(contact => {
+  const filteredContacts = contactsToUse.filter(contact => {
     const matchesSearch = contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          contact.phone?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -86,30 +169,46 @@ export const ContactsList = ({ searchTerm, tagFilter }: ContactsListProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredContacts.map((contact) => {
-        // Gerar iniciais do nome
-        const initials = contact.name ? 
-          contact.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 
-          'SC'; // "Sem Contato"
-        
-        // Formatar data de criação
-        const createdAt = contact.created_at ? 
-          new Date(contact.created_at).toLocaleDateString('pt-BR') : 
-          'Data não disponível';
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredContacts.map((contact) => {
+          // Gerar iniciais do nome
+          const initials = contact.name ? 
+            contact.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 
+            'SC'; // "Sem Contato"
+          
+          // Formatar data de criação
+          const createdAt = contact.created_at ? 
+            new Date(contact.created_at).toLocaleDateString('pt-BR') : 
+            'Data não disponível';
 
-        const contactForCard = {
-          id: contact.id.toString(),
-          initials,
-          name: contact.name || 'Nome não informado',
-          email: contact.email || 'Email não informado',
-          phone: contact.phone || 'Telefone não informado',
-          createdAt,
-          tag: undefined // O banco não tem campo tag ainda
-        };
+          const contactForCard: ContactForCard = {
+            id: contact.id.toString(),
+            initials,
+            name: contact.name || 'Nome não informado',
+            email: contact.email || 'Email não informado',
+            phone: contact.phone || 'Telefone não informado',
+            createdAt,
+            tag: undefined // O banco não tem campo tag ainda
+          };
 
-        return <ContactCard key={contact.id} contact={contactForCard} />;
-      })}
-    </div>
+          return (
+            <ContactCard 
+              key={contact.id} 
+              contact={contactForCard}
+              onEdit={handleEditContact}
+              onDelete={handleDeleteContact}
+            />
+          );
+        })}
+      </div>
+
+      <EditContactDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        contact={editingContact}
+        onContactUpdated={handleContactUpdated}
+      />
+    </>
   );
 };

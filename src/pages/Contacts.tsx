@@ -2,14 +2,25 @@
 import { useState } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Plus, Search } from "lucide-react";
+import { Users, Search } from "lucide-react";
 import { ContactStats } from "@/components/ContactStats";
 import { ContactsList } from "@/components/ContactsList";
+import { NewContactDialog } from "@/components/NewContactDialog";
 
 const Contacts = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+
+  const handleContactAdded = (newContact: any) => {
+    setContacts(prev => [newContact, ...prev]);
+    setUpdateTrigger(prev => prev + 1);
+  };
+
+  const handleContactUpdate = () => {
+    setUpdateTrigger(prev => prev + 1);
+  };
 
   return (
     <SidebarProvider>
@@ -31,10 +42,7 @@ const Contacts = () => {
                   </div>
                 </div>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Contato
-              </Button>
+              <NewContactDialog onContactAdded={handleContactAdded} />
             </div>
 
             {/* Stats Cards */}
@@ -54,7 +62,12 @@ const Contacts = () => {
             </div>
 
             {/* Contacts List */}
-            <ContactsList searchTerm={searchTerm} tagFilter="all" />
+            <ContactsList 
+              searchTerm={searchTerm} 
+              tagFilter="all"
+              contacts={contacts.length > 0 ? contacts : undefined}
+              onContactUpdate={handleContactUpdate}
+            />
           </div>
         </SidebarInset>
       </div>
