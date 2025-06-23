@@ -2,19 +2,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MessageCircle, Clock, Users, CheckCircle } from "lucide-react"
-
-interface Conversation {
-  id: number
-  status: string
-  unread_count: number
-  assignee?: {
-    id: number
-    name: string
-  }
-}
+import { ConversationForStats } from "@/types"
 
 interface ConversationStatsProps {
-  conversations: Conversation[]
+  conversations: ConversationForStats[]
   isLoading?: boolean
 }
 

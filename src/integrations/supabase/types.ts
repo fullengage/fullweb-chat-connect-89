@@ -237,6 +237,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations_for_stats"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -342,7 +349,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      conversations_for_stats: {
+        Row: {
+          account_id: number | null
+          assignee: Json | null
+          assignee_id: string | null
+          contact_id: number | null
+          created_at: string | null
+          id: number | null
+          kanban_stage: string | null
+          labels: string[] | null
+          last_activity_at: string | null
+          meta: Json | null
+          priority: string | null
+          status: string | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       auto_route_conversation: {
@@ -360,6 +407,16 @@ export type Database = {
       cleanup_inactive_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_conversations_for_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: number
+          assignee_id: string
+          status: string
+          subject: string
+          assignee: Json
+        }[]
       }
       get_manageable_users: {
         Args: { p_manager_id: string }
