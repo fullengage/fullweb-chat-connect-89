@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -13,7 +12,7 @@ import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { KanbanBoard } from "@/components/KanbanBoard"
 import { Kanban } from "lucide-react"
-import { ConversationForStats } from "@/types"
+import { ConversationForStats, Conversation } from "@/types"
 
 // Define Agent type locally to match what ChatwootFilters expects
 interface LocalAgent {
@@ -75,7 +74,7 @@ export default function Dashboard() {
     updateKanbanStage.mutate({ conversationId, kanbanStage: newStage })
   }
 
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter((conversation: Conversation) => {
     if (assigneeId === "unassigned") {
       return !conversation.assignee
     }
@@ -83,7 +82,7 @@ export default function Dashboard() {
   })
 
   // Convert conversations to the format expected by components
-  const conversationsForStats: ConversationForStats[] = filteredConversations.map(conv => ({
+  const conversationsForStats: ConversationForStats[] = filteredConversations.map((conv: Conversation) => ({
     ...conv,
     unread_count: conv.unread_count || 0,
     contact: {
@@ -93,7 +92,7 @@ export default function Dashboard() {
       avatar_url: conv.contact?.avatar_url
     },
     assignee: conv.assignee ? {
-      id: parseInt(conv.assignee.id) || 0, // Convert string ID to number
+      id: conv.assignee.id, // Keep as string since it's already string from Supabase
       name: conv.assignee.name,
       avatar_url: conv.assignee.avatar_url
     } : undefined,

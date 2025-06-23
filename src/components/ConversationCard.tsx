@@ -1,11 +1,10 @@
-
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Clock, User } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
-import { Conversation } from "@/hooks/useSupabaseData"
+import { Conversation } from "@/types"
 
 interface ConversationCardProps {
   conversation: Conversation
@@ -81,7 +80,7 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
                   {conversation.contact?.name || 'Contato Desconhecido'}
                 </h3>
                 <div className="flex items-center space-x-2">
-                  {conversation.unread_count > 0 && (
+                  {conversation.unread_count && conversation.unread_count > 0 && (
                     <Badge variant="destructive" className="text-xs">
                       {conversation.unread_count}
                     </Badge>
