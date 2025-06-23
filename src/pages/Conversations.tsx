@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar"
 import { ConversationStats } from "@/components/ConversationStats"
 import { ConversationManagement } from "@/components/ConversationManagement"
 import { useConversations, useUsers, useInboxes } from "@/hooks/useSupabaseData"
-import { Conversation } from "@/types"
+import { Conversation, ConversationForStats } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -95,6 +95,32 @@ export default function Conversations() {
     }
     return true
   })
+
+  // Convert to ConversationForStats format for the stats component
+  const conversationsForStats: ConversationForStats[] = filteredConversations.map((conv: Conversation) => ({
+    id: conv.id,
+    status: conv.status,
+    unread_count: conv.unread_count || 0,
+    contact: {
+      id: conv.contact?.id || 0,
+      name: conv.contact?.name || 'Contato Desconhecido',
+      email: conv.contact?.email,
+      phone: conv.contact?.phone,
+      avatar_url: conv.contact?.avatar_url
+    },
+    assignee: conv.assignee ? {
+      id: conv.assignee.id,
+      name: conv.assignee.name,
+      avatar_url: conv.assignee.avatar_url
+    } : undefined,
+    inbox: {
+      id: conv.inbox?.id || 1,
+      name: conv.inbox?.name || 'Inbox Padrão',
+      channel_type: conv.inbox?.channel_type || 'webchat'
+    },
+    updated_at: conv.updated_at,
+    messages: conv.messages || []
+  }))
 
   if (!currentUser) {
     return (
@@ -227,7 +253,7 @@ export default function Conversations() {
             {accountIdNumber > 0 ? (
               <div className="space-y-6">
                 <ConversationStats
-                  conversations={filteredConversations}
+                  conversations={conversationsForStats}
                   isLoading={conversationsLoading}
                 />
                 

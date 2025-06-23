@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -83,7 +84,8 @@ export default function Dashboard() {
 
   // Convert conversations to the format expected by components
   const conversationsForStats: ConversationForStats[] = filteredConversations.map((conv: Conversation) => ({
-    ...conv,
+    id: conv.id,
+    status: conv.status,
     unread_count: conv.unread_count || 0,
     contact: {
       id: conv.contact?.id || 0,
@@ -93,7 +95,7 @@ export default function Dashboard() {
       avatar_url: conv.contact?.avatar_url
     },
     assignee: conv.assignee ? {
-      id: conv.assignee.id, // Keep as string since it's already string from Supabase
+      id: conv.assignee.id,
       name: conv.assignee.name,
       avatar_url: conv.assignee.avatar_url
     } : undefined,
@@ -102,6 +104,7 @@ export default function Dashboard() {
       name: 'Inbox Padrão',
       channel_type: 'webchat'
     },
+    updated_at: conv.updated_at,
     messages: conv.messages || []
   }))
 
