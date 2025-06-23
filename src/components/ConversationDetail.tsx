@@ -33,33 +33,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
-
-interface Conversation {
-  id: number
-  status: string
-  unread_count: number
-  contact: {
-    id: number
-    name: string
-    email?: string
-    phone_number?: string
-    avatar_url?: string
-  }
-  assignee?: {
-    id: number
-    name: string
-    avatar_url?: string
-  }
-  inbox: {
-    id: number
-    name: string
-    channel_type: string
-  }
-  updated_at: string
-  created_at: string
-  messages: any[]
-  labels?: string[]
-}
+import { Conversation } from "@/hooks/useSupabaseData"
 
 interface Agent {
   id: number
@@ -140,13 +114,13 @@ export const ConversationDetail = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={conversation.contact.avatar_url} />
+                <AvatarImage src={conversation.contact?.avatar_url} />
                 <AvatarFallback>
-                  {conversation.contact.name?.charAt(0).toUpperCase() || 'U'}
+                  {conversation.contact?.name?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <SheetTitle>{conversation.contact.name || 'Contato Desconhecido'}</SheetTitle>
+                <SheetTitle>{conversation.contact?.name || 'Contato Desconhecido'}</SheetTitle>
                 <SheetDescription>
                   Conversa #{conversation.id} • {conversation.inbox.name}
                 </SheetDescription>
@@ -165,16 +139,16 @@ export const ConversationDetail = ({
               <CardTitle className="text-sm">Informações do Contato</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {conversation.contact.email && (
+              {conversation.contact?.email && (
                 <div className="flex items-center space-x-2 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <span>{conversation.contact.email}</span>
                 </div>
               )}
-              {conversation.contact.phone_number && (
+              {conversation.contact?.phone && (
                 <div className="flex items-center space-x-2 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{conversation.contact.phone_number}</span>
+                  <span>{conversation.contact.phone}</span>
                 </div>
               )}
               <div className="flex items-center space-x-2 text-sm">
@@ -211,7 +185,7 @@ export const ConversationDetail = ({
 
               <div>
                 <label className="text-sm font-medium">Responsável</label>
-                <Select value={selectedAssignee || conversation.assignee?.id.toString() || ""} onValueChange={handleAssigneeChange}>
+                <Select value={selectedAssignee || conversation.assignee?.id || ""} onValueChange={handleAssigneeChange}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Selecionar responsável" />
                   </SelectTrigger>
@@ -250,13 +224,13 @@ export const ConversationDetail = ({
                     <div key={index} className="flex space-x-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="text-xs">
-                          {message.sender?.name?.charAt(0) || 'U'}
+                          {message.sender_type === 'contact' ? 'C' : 'A'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium">
-                            {message.sender?.name || 'Usuário'}
+                            {message.sender_type === 'contact' ? conversation.contact?.name || 'Contato' : 'Agente'}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {message.created_at && formatDistanceToNow(new Date(message.created_at), { 

@@ -40,7 +40,7 @@ interface Contact {
   updated_at: string
 }
 
-interface Conversation {
+export interface Conversation {
   id: number
   account_id: number
   contact_id: number
@@ -51,7 +51,16 @@ interface Conversation {
   created_at: string
   updated_at: string
   contact?: Contact
-  assignee?: User
+  assignee?: {
+    id: string
+    name: string
+    avatar_url?: string
+  }
+  inbox: {
+    id: number
+    name: string
+    channel_type: string
+  }
   messages?: Message[]
   unread_count: number
 }
@@ -125,8 +134,7 @@ export const useConversations = (filters: ConversationFilters) => {
         .select(`
           *,
           contact:contacts(*),
-          assignee:users(*),
-          messages(*)
+          assignee:users(*)
         `)
         .order('updated_at', { ascending: false })
 
@@ -177,14 +185,20 @@ export const useConversations = (filters: ConversationFilters) => {
         throw error
       }
 
-      // Calculate unread count for each conversation
-      const conversationsWithUnread = data?.map(conversation => ({
+      // Transform data to include inbox information and calculate unread count
+      const conversationsWithInbox = data?.map(conversation => ({
         ...conversation,
-        unread_count: conversation.messages?.filter((msg: any) => !msg.read_at && msg.sender_type === 'contact').length || 0
+        inbox: {
+          id: 1,
+          name: 'Chat Interno',
+          channel_type: 'webchat'
+        },
+        messages: [],
+        unread_count: 0
       })) || []
 
-      console.log('Conversations fetched successfully:', conversationsWithUnread.length)
-      return conversationsWithUnread as Conversation[]
+      console.log('Conversations fetched successfully:', conversationsWithInbox.length)
+      return conversationsWithInbox as Conversation[]
     },
     enabled: !!authUser && !!filters.account_id,
     refetchInterval: 30000,

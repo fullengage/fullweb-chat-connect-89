@@ -5,30 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Clock, User } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
-
-interface Conversation {
-  id: number
-  status: string
-  unread_count: number
-  contact: {
-    id: number
-    name: string
-    email?: string
-    avatar_url?: string
-  }
-  assignee?: {
-    id: number
-    name: string
-    avatar_url?: string
-  }
-  inbox: {
-    id: number
-    name: string
-    channel_type: string
-  }
-  updated_at: string
-  messages: any[]
-}
+import { Conversation } from "@/hooks/useSupabaseData"
 
 interface ConversationCardProps {
   conversation: Conversation
@@ -65,8 +42,10 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
   const getChannelIcon = (channelType: string) => {
     switch (channelType) {
       case 'Channel::WebWidget':
+      case 'webchat':
         return '💬'
       case 'Channel::Email':
+      case 'email':
         return '📧'
       case 'Channel::FacebookPage':
         return '📘'
@@ -90,16 +69,16 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 flex-1">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={conversation.contact.avatar_url} />
+              <AvatarImage src={conversation.contact?.avatar_url} />
               <AvatarFallback>
-                {conversation.contact.name?.charAt(0).toUpperCase() || 'U'}
+                {conversation.contact?.name?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold truncate">
-                  {conversation.contact.name || 'Contato Desconhecido'}
+                  {conversation.contact?.name || 'Contato Desconhecido'}
                 </h3>
                 <div className="flex items-center space-x-2">
                   {conversation.unread_count > 0 && (
