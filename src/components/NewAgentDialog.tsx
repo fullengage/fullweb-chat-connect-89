@@ -90,48 +90,25 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
 
     setIsLoading(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const newAgent = {
-      id: Date.now().toString(),
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
-      teams: formData.teams,
-      status: formData.status,
-      initials: formData.name.split(' ').map(n => n[0]).join('').toUpperCase(),
-      isOnline: formData.status === 'online',
-      attendances: 0,
-      avgResponseTime: "0s",
-      resolutionRate: 0,
-      rating: 0,
-      conversationsToday: 0,
-      lastActivity: "Agora"
-    };
-
-    onSave(newAgent);
-    
-    toast({
-      title: "Agente criado com sucesso!",
-      description: `${formData.name} foi adicionado à equipe.`,
-    });
-
-    setIsLoading(false);
-    onOpenChange(false);
-    
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      role: "",
-      teams: [],
-      status: "offline",
-      avatar: ""
-    });
-    setErrors({});
+    try {
+      await onSave(formData);
+      
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        role: "",
+        teams: [],
+        status: "offline",
+        avatar: ""
+      });
+      setErrors({});
+    } catch (error) {
+      console.error('Error in form submission:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -74,6 +74,101 @@ export type Database = {
           },
         ]
       }
+      agent_stats: {
+        Row: {
+          agent_id: string
+          attendances: number | null
+          avg_response_time_seconds: number | null
+          conversations_today: number | null
+          created_at: string
+          date: string | null
+          id: string
+          rating: number | null
+          resolution_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          attendances?: number | null
+          avg_response_time_seconds?: number | null
+          conversations_today?: number | null
+          created_at?: string
+          date?: string | null
+          id?: string
+          rating?: number | null
+          resolution_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          attendances?: number | null
+          avg_response_time_seconds?: number | null
+          conversations_today?: number | null
+          created_at?: string
+          date?: string | null
+          id?: string
+          rating?: number | null
+          resolution_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_stats_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          account_id: number
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean | null
+          last_activity: string | null
+          name: string
+          phone: string | null
+          role: string
+          status: string
+          teams: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: number
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean | null
+          last_activity?: string | null
+          name: string
+          phone?: string | null
+          role: string
+          status?: string
+          teams?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: number
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          last_activity?: string | null
+          name?: string
+          phone?: string | null
+          role?: string
+          status?: string
+          teams?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           account_id: number

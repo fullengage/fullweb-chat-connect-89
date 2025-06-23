@@ -20,35 +20,18 @@ import {
   Calendar,
   Edit2
 } from "lucide-react";
-
-interface Agent {
-  id: string;
-  initials: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: string;
-  status: string;
-  teams?: string[];
-  attendances: number;
-  avgResponseTime: string;
-  resolutionRate: number;
-  rating: number;
-  isOnline: boolean;
-  conversationsToday: number;
-  lastActivity?: string;
-}
+import type { AgentWithStats } from "@/hooks/useAgents";
 
 interface AgentDetailsDialogProps {
-  agent: Agent | null;
+  agent: AgentWithStats | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (agent: Agent) => void;
+  onSave: (agent: AgentWithStats) => void;
 }
 
 export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentDetailsDialogProps) => {
   const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState<Agent | null>(null);
+  const [editData, setEditData] = useState<AgentWithStats | null>(null);
 
   if (!agent) return null;
 
@@ -82,14 +65,14 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "online": return "bg-green-100 text-green-800";
-      case "ocupado": case "busy": return "bg-yellow-100 text-yellow-800";
+      case "busy": return "bg-yellow-100 text-yellow-800";
       case "offline": return "bg-red-100 text-red-800";
-      case "ausente": case "away": return "bg-gray-100 text-gray-800";
+      case "away": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  // Mock data for charts and activity
+  // Mock data for charts and activity since we don't have this data yet
   const weeklyStats = [
     { day: "Seg", conversations: 12 },
     { day: "Ter", conversations: 15 },
@@ -201,7 +184,7 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
                   </div>
                   <div className="text-center p-4 bg-yellow-50 rounded-lg">
                     <Star className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-yellow-600">{agent.rating}</p>
+                    <p className="text-2xl font-bold text-yellow-600">{agent.stats?.rating || 0}</p>
                     <p className="text-sm text-gray-600">Avaliação</p>
                   </div>
                 </div>
@@ -283,19 +266,27 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
                       />
                     </div>
                     <div>
+                      <Label htmlFor="edit-phone">Telefone</Label>
+                      <Input
+                        id="edit-phone"
+                        value={editData.phone || ''}
+                        onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                      />
+                    </div>
+                    <div>
                       <Label>Status</Label>
                       <Select 
                         value={editData.status} 
-                        onValueChange={(value) => setEditData({ ...editData, status: value })}
+                        onValueChange={(value: 'online' | 'offline' | 'busy' | 'away') => setEditData({ ...editData, status: value })}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Online">Online</SelectItem>
-                          <SelectItem value="Ocupado">Ocupado</SelectItem>
-                          <SelectItem value="Offline">Offline</SelectItem>
-                          <SelectItem value="Ausente">Ausente</SelectItem>
+                          <SelectItem value="online">Online</SelectItem>
+                          <SelectItem value="busy">Ocupado</SelectItem>
+                          <SelectItem value="offline">Offline</SelectItem>
+                          <SelectItem value="away">Ausente</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -314,6 +305,12 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
                       <Label>Email</Label>
                       <p className="font-medium">{agent.email}</p>
                     </div>
+                    {agent.phone && (
+                      <div>
+                        <Label>Telefone</Label>
+                        <p className="font-medium">{agent.phone}</p>
+                      </div>
+                    )}
                     <div>
                       <Label>Status</Label>
                       <Badge className={getStatusColor(agent.status)}>

@@ -1,26 +1,18 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, CheckCircle, Clock, Star } from "lucide-react";
-
-interface Agent {
-  id: string;
-  status: string;
-  rating: number;
-  isOnline: boolean;
-}
+import type { AgentWithStats } from "@/hooks/useAgents";
 
 interface AgentStatsProps {
-  agents: Agent[];
+  agents: AgentWithStats[];
 }
 
 export const AgentStats = ({ agents }: AgentStatsProps) => {
   const totalAgents = agents.length;
-  const activeAgents = agents.filter(agent => agent.status.toLowerCase() !== 'desativado').length;
-  const onlineAgents = agents.filter(agent => 
-    agent.status.toLowerCase() === 'online' || agent.isOnline
-  ).length;
+  const activeAgents = agents.filter(agent => agent.is_active).length;
+  const onlineAgents = agents.filter(agent => agent.status === 'online').length;
   const averageRating = totalAgents > 0 
-    ? (agents.reduce((sum, agent) => sum + agent.rating, 0) / totalAgents).toFixed(1)
+    ? (agents.reduce((sum, agent) => sum + (agent.stats?.rating || 0), 0) / totalAgents).toFixed(1)
     : "0.0";
 
   const stats = [

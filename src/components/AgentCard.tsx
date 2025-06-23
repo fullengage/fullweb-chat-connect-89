@@ -4,27 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Edit, MoreHorizontal, Star, MessageCircle, Clock, CheckCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
-interface Agent {
-  id: string;
-  initials: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: string;
-  status: string;
-  teams?: string[];
-  attendances: number;
-  avgResponseTime: string;
-  resolutionRate: number;
-  rating: number;
-  isOnline: boolean;
-  conversationsToday: number;
-  lastActivity?: string;
-}
+import type { AgentWithStats } from "@/hooks/useAgents";
 
 interface AgentCardProps {
-  agent: Agent;
+  agent: AgentWithStats;
   onClick?: () => void;
 }
 
@@ -45,12 +28,10 @@ const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "online":
       return "bg-green-500";
-    case "ocupado":
     case "busy":
       return "bg-yellow-500";
     case "offline":
       return "bg-red-500";
-    case "ausente":
     case "away":
       return "bg-gray-500";
     default:
@@ -62,12 +43,10 @@ const getStatusText = (status: string) => {
   switch (status.toLowerCase()) {
     case "online":
       return "Online";
-    case "ocupado":
     case "busy":
       return "Ocupado";
     case "offline":
       return "Offline";
-    case "ausente":
     case "away":
       return "Ausente";
     default:
@@ -101,8 +80,10 @@ export const AgentCard = ({ agent, onClick }: AgentCardProps) => {
               <h3 className="font-semibold text-gray-900 truncate">{agent.name}</h3>
               <p className="text-sm text-gray-600 truncate">{agent.email}</p>
               <p className="text-xs text-gray-500">{getStatusText(agent.status)}</p>
-              {agent.lastActivity && (
-                <p className="text-xs text-gray-400">{agent.lastActivity}</p>
+              {agent.last_activity && (
+                <p className="text-xs text-gray-400">
+                  Ativo {new Date(agent.last_activity).toLocaleString('pt-BR')}
+                </p>
               )}
             </div>
           </div>
@@ -186,13 +167,13 @@ export const AgentCard = ({ agent, onClick }: AgentCardProps) => {
               <span className="text-gray-600">Avaliação</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span className="font-semibold">{agent.rating}</span>
+              <span className="font-semibold">{agent.stats?.rating || 0}</span>
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
                     className={`h-3 w-3 ${
-                      star <= Math.floor(agent.rating)
+                      star <= Math.floor(agent.stats?.rating || 0)
                         ? "text-yellow-400 fill-current"
                         : "text-gray-300"
                     }`}

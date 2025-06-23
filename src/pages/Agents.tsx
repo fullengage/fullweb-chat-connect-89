@@ -7,37 +7,62 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Plus, Search, X, Download, Filter } from "lucide-react";
 import { AgentStats } from "@/components/AgentStats";
-import { AgentsList, mockAgents, Agent } from "@/components/AgentsList";
+import { AgentsList } from "@/components/AgentsList";
 import { NewAgentDialog } from "@/components/NewAgentDialog";
 import { AgentDetailsDialog } from "@/components/AgentDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAgents, useUpdateAgent, useCreateAgent, type AgentWithStats } from "@/hooks/useAgents";
 
 const Agents = () => {
-  const [agents, setAgents] = useState<Agent[]>(mockAgents);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [isNewAgentOpen, setIsNewAgentOpen] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AgentWithStats | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleNewAgent = (newAgent: Agent) => {
-    setAgents(prev => [...prev, newAgent]);
+  // Use real data from Supabase
+  const { data: agents = [], isLoading, error } = useAgents();
+  const updateAgentMutation = useUpdateAgent();
+  const createAgentMutation = useCreateAgent();
+
+  const handleNewAgent = async (newAgentData: any) => {
+    try {
+      await createAgentMutation.mutateAsync({
+        account_id: 1, // Default account for now
+        name: newAgentData.name,
+        email: newAgentData.email,
+        phone: newAgentData.phone,
+        role: newAgentData.role,
+        status: newAgentData.status,
+        teams: newAgentData.teams,
+        is_active: true
+      });
+      setIsNewAgentOpen(false);
+    } catch (error) {
+      console.error('Error creating agent:', error);
+    }
   };
 
-  const handleAgentClick = (agent: Agent) => {
+  const handleAgentClick = (agent: AgentWithStats) => {
     setSelectedAgent(agent);
     setIsDetailsOpen(true);
   };
 
-  const handleUpdateAgent = (updatedAgent: Agent) => {
-    setAgents(prev => prev.map(agent => 
-      agent.id === updatedAgent.id ? updatedAgent : agent
-    ));
-    toast({
-      title: "Agente atualizado",
-      description: "As informações do agente foram atualizadas com sucesso.",
-    });
+  const handleUpdateAgent = async (updatedAgent: AgentWithStats) => {
+    try {
+      await updateAgentMutation.mutateAsync({
+        id: updatedAgent.id,
+        name: updatedAgent.name,
+        email: updatedAgent.email,
+        phone: updatedAgent.phone,
+        status: updatedAgent.status,
+        role: updatedAgent.role,
+        teams: updatedAgent.teams
+      });
+    } catch (error) {
+      console.error('Error updating agent:', error);
+    }
   };
 
   const clearSearch = () => {
@@ -57,7 +82,7 @@ const Agents = () => {
         agent.conversationsToday,
         agent.avgResponseTime,
         `${agent.resolutionRate}%`,
-        agent.rating
+        agent.stats?.rating || 0
       ].join(","))
     ].join("\n");
 
@@ -91,6 +116,24 @@ const Agents = () => {
   };
 
   const roleCounts = getRoleCounts();
+
+  if (error) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <SidebarInset>
+            <div className="flex-1 p-6">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-red-600 mb-2">Erro ao carregar agentes</h2>
+                <p className="text-gray-600">Não foi possível carregar os dados dos agentes.</p>
+              </div>
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -207,6 +250,7 @@ const Agents = () => {
               roleFilter={roleFilter}
               agents={agents}
               onAgentClick={handleAgentClick}
+              isLoading={isLoading}
             />
 
             {/* Modals */}
