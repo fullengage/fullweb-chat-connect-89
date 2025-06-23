@@ -88,7 +88,7 @@ export default function Conversations() {
     })
   }
 
-  const filteredConversations: Conversation[] = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter(conversation => {
     if (assigneeId === "unassigned") {
       return !conversation.assignee
     }
@@ -242,13 +242,13 @@ export default function Conversations() {
                     <MessageSquare className="h-12 w-12 text-blue-600" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {currentUser.role === 'superadmin' 
+                    {currentUser?.role === 'superadmin' 
                       ? 'Selecione uma conta para visualizar conversas'
                       : 'Configure sua conta para visualizar conversas'
                     }
                   </h3>
                   <p className="text-gray-500 mb-6">
-                    {currentUser.role === 'superadmin'
+                    {currentUser?.role === 'superadmin'
                       ? 'Digite o ID da conta no filtro acima para visualizar as conversas.'
                       : 'Verifique se sua conta está configurada corretamente.'
                     }
