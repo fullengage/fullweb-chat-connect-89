@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { ConversationStats } from "@/components/ConversationStats"
 import { ConversationManagement } from "@/components/ConversationManagement"
-import { useConversations, useUsers, useInboxes } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, useInboxes, type Conversation } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -89,7 +88,7 @@ export default function Conversations() {
     })
   }
 
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations: Conversation[] = conversations.filter(conversation => {
     if (assigneeId === "unassigned") {
       return !conversation.assignee
     }
