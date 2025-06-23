@@ -3,7 +3,8 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar"
 import { ConversationStats } from "@/components/ConversationStats"
 import { ConversationManagement } from "@/components/ConversationManagement"
-import { useConversations, useUsers, useInboxes, type Conversation } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, useInboxes } from "@/hooks/useSupabaseData"
+import { Conversation } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -88,7 +89,7 @@ export default function Conversations() {
     })
   }
 
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter((conversation: Conversation) => {
     if (assigneeId === "unassigned") {
       return !conversation.assignee
     }

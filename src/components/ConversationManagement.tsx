@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +22,8 @@ import {
   AlertCircle,
   Users
 } from "lucide-react"
-import { useConversations, useUsers, type User, type Conversation } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, type User } from "@/hooks/useSupabaseData"
+import { Conversation } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
 interface ConversationManagementProps {
@@ -86,7 +86,7 @@ export const ConversationManagement = ({
   }
 
   // Filter conversations based on search query and filters
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter((conversation: Conversation) => {
     const matchesSearch = searchQuery === "" || 
       conversation.contact?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conversation.contact?.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -100,9 +100,9 @@ export const ConversationManagement = ({
 
   // Group conversations by status
   const conversationsByStatus = {
-    open: filteredConversations.filter(c => c.status === 'open'),
-    pending: filteredConversations.filter(c => c.status === 'pending'),
-    resolved: filteredConversations.filter(c => c.status === 'resolved'),
+    open: filteredConversations.filter((c: Conversation) => c.status === 'open'),
+    pending: filteredConversations.filter((c: Conversation) => c.status === 'pending'),
+    resolved: filteredConversations.filter((c: Conversation) => c.status === 'resolved'),
   }
 
   const getTabCount = (status: string) => {

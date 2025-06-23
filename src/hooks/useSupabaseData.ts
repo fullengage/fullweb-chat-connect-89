@@ -1,11 +1,11 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
+import { Conversation } from '@/types'
 
-// Types
+// Types - using the main Conversation type from types/index.ts, only defining internal types here
 interface Account {
   id: number
   name: string
@@ -38,31 +38,6 @@ interface Contact {
   custom_fields?: any
   created_at: string
   updated_at: string
-}
-
-export interface Conversation {
-  id: number
-  account_id: number
-  contact_id: number
-  status: 'open' | 'pending' | 'resolved' | 'archived'
-  assignee_id?: string
-  kanban_stage: string
-  priority?: 'high' | 'medium' | 'low'
-  created_at: string
-  updated_at: string
-  contact?: Contact
-  assignee?: {
-    id: string
-    name: string
-    avatar_url?: string
-  }
-  inbox: {
-    id: number
-    name: string
-    channel_type: string
-  }
-  messages?: Message[]
-  unread_count: number
 }
 
 interface Message {
@@ -595,11 +570,10 @@ export const useSendMessage = () => {
   })
 }
 
-// Export dos tipos para uso em outros arquivos
+// Export only the internal types, not Conversation (use the one from types/index.ts)
 export type { 
   Account, 
   Contact, 
-  Conversation, 
   Message,
   ConversationFilters,
   Inbox,

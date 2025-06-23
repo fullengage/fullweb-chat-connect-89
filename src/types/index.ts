@@ -1,3 +1,4 @@
+
 export interface Agent {
   id: string
   name: string
@@ -15,7 +16,7 @@ export interface ConversationForStats {
     avatar_url?: string
   }
   assignee?: {
-    id: number
+    id: string // Changed from number to string to match Supabase UUIDs
     name: string
     avatar_url?: string
   }
@@ -52,9 +53,14 @@ export interface Conversation {
     avatar_url?: string
   }
   assignee?: {
-    id: string
+    id: string // Changed from number to string to match Supabase UUIDs
     name: string
     avatar_url?: string
+  }
+  inbox: {
+    id: number
+    name: string
+    channel_type: string
   }
   messages?: any[]
 }
