@@ -89,6 +89,7 @@ export default function Dashboard() {
       id: conv.contact?.id || 0,
       name: conv.contact?.name || 'Contato Desconhecido',
       email: conv.contact?.email,
+      phone: conv.contact?.phone,
       avatar_url: conv.contact?.avatar_url
     },
     assignee: conv.assignee ? {

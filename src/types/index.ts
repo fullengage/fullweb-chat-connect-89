@@ -13,6 +13,7 @@ export interface ConversationForStats {
     id: number
     name: string
     email?: string
+    phone?: string
     avatar_url?: string
   }
   assignee?: {
@@ -50,6 +51,7 @@ export interface Conversation {
     id: number
     name: string
     email?: string
+    phone?: string
     avatar_url?: string
   }
   assignee?: {
