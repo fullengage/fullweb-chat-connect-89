@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +23,7 @@ import {
   AlertCircle,
   Users
 } from "lucide-react"
-import { useConversations, useUsers, type User } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, type User, type Conversation } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
 
 interface ConversationManagementProps {
@@ -30,7 +31,7 @@ interface ConversationManagementProps {
   selectedInboxId?: number
 }
 
-// Define Agent type locally to match what ConversationDetail expects
+// Define Agent type to match what ConversationDetail expects
 interface LocalAgent {
   id: number
   name: string
@@ -41,7 +42,7 @@ export const ConversationManagement = ({
   accountId, 
   selectedInboxId 
 }: ConversationManagementProps) => {
-  const [selectedConversation, setSelectedConversation] = useState<any>(null)
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState("all")
   const [assigneeFilter, setAssigneeFilter] = useState("all")
@@ -74,7 +75,7 @@ export const ConversationManagement = ({
     email: user.email
   }))
 
-  const handleConversationClick = (conversation: any) => {
+  const handleConversationClick = (conversation: Conversation) => {
     setSelectedConversation(conversation)
     setIsDetailOpen(true)
   }
@@ -178,8 +179,8 @@ export const ConversationManagement = ({
                 <SelectContent>
                   <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="unassigned">Não atribuídos</SelectItem>
-                  {agentsForFilter.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id.toString()}>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
                     </SelectItem>
                   ))}
@@ -273,8 +274,8 @@ const ConversationList = ({
   conversations, 
   onConversationClick 
 }: { 
-  conversations: any[], 
-  onConversationClick: (conversation: any) => void 
+  conversations: Conversation[], 
+  onConversationClick: (conversation: Conversation) => void 
 }) => {
   if (conversations.length === 0) {
     return (
