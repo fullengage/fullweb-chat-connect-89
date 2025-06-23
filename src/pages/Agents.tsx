@@ -5,13 +5,92 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, Search } from "lucide-react";
+import { Users, Plus, Search, X, Download, Filter } from "lucide-react";
 import { AgentStats } from "@/components/AgentStats";
-import { AgentsList } from "@/components/AgentsList";
+import { AgentsList, mockAgents, Agent } from "@/components/AgentsList";
+import { NewAgentDialog } from "@/components/NewAgentDialog";
+import { AgentDetailsDialog } from "@/components/AgentDetailsDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Agents = () => {
+  const [agents, setAgents] = useState<Agent[]>(mockAgents);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [isNewAgentOpen, setIsNewAgentOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleNewAgent = (newAgent: Agent) => {
+    setAgents(prev => [...prev, newAgent]);
+  };
+
+  const handleAgentClick = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setIsDetailsOpen(true);
+  };
+
+  const handleUpdateAgent = (updatedAgent: Agent) => {
+    setAgents(prev => prev.map(agent => 
+      agent.id === updatedAgent.id ? updatedAgent : agent
+    ));
+    toast({
+      title: "Agente atualizado",
+      description: "As informações do agente foram atualizadas com sucesso.",
+    });
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
+  const exportAgents = () => {
+    const csv = [
+      "Nome,Email,Telefone,Função,Status,Equipes,Conversas Hoje,Tempo Resposta,Taxa Resolução,Avaliação",
+      ...agents.map(agent => [
+        agent.name,
+        agent.email,
+        agent.phone || "",
+        agent.role,
+        agent.status,
+        agent.teams?.join("; ") || "",
+        agent.conversationsToday,
+        agent.avgResponseTime,
+        `${agent.resolutionRate}%`,
+        agent.rating
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "agentes.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exportação concluída",
+      description: "A lista de agentes foi exportada com sucesso.",
+    });
+  };
+
+  // Count agents by role for filter
+  const getRoleCounts = () => {
+    const counts = agents.reduce((acc, agent) => {
+      acc[agent.role] = (acc[agent.role] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return {
+      all: agents.length,
+      agent: counts.agent || 0,
+      supervisor: counts.supervisor || 0,
+      administrator: counts.administrator || 0
+    };
+  };
+
+  const roleCounts = getRoleCounts();
 
   return (
     <SidebarProvider>
@@ -33,14 +112,20 @@ const Agents = () => {
                   </div>
                 </div>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Agente
-              </Button>
+              <div className="flex items-center space-x-3">
+                <Button variant="outline" onClick={exportAgents}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setIsNewAgentOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Agente
+                </Button>
+              </div>
             </div>
 
             {/* Stats Cards */}
-            <AgentStats />
+            <AgentStats agents={agents} />
 
             {/* Filters */}
             <div className="flex items-center space-x-4 mb-6">
@@ -50,24 +135,93 @@ const Agents = () => {
                   placeholder="Buscar agentes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                 />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-8 w-8 p-0"
+                    onClick={clearSearch}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
+              
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-64">
+                  <Filter className="h-4 w-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as funções</SelectItem>
-                  <SelectItem value="agent">Agente</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="administrator">Administrador</SelectItem>
+                  <SelectItem value="all">
+                    Todas as funções ({roleCounts.all})
+                  </SelectItem>
+                  <SelectItem value="agent">
+                    Agente ({roleCounts.agent})
+                  </SelectItem>
+                  <SelectItem value="supervisor">
+                    Supervisor ({roleCounts.supervisor})
+                  </SelectItem>
+                  <SelectItem value="administrator">
+                    Administrador ({roleCounts.administrator})
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Results Summary */}
+            {(searchTerm || roleFilter !== "all") && (
+              <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-blue-700">
+                    {agents.filter(agent => {
+                      const matchesSearch = 
+                        agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (agent.phone && agent.phone.includes(searchTerm));
+                      const matchesRole = roleFilter === "all" || agent.role === roleFilter;
+                      return matchesSearch && matchesRole;
+                    }).length} agente(s) encontrado(s)
+                  </span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setRoleFilter("all");
+                  }}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
+
             {/* Agents List */}
-            <AgentsList searchTerm={searchTerm} roleFilter={roleFilter} />
+            <AgentsList 
+              searchTerm={searchTerm} 
+              roleFilter={roleFilter}
+              agents={agents}
+              onAgentClick={handleAgentClick}
+            />
+
+            {/* Modals */}
+            <NewAgentDialog
+              open={isNewAgentOpen}
+              onOpenChange={setIsNewAgentOpen}
+              onSave={handleNewAgent}
+            />
+
+            <AgentDetailsDialog
+              agent={selectedAgent}
+              open={isDetailsOpen}
+              onOpenChange={setIsDetailsOpen}
+              onSave={handleUpdateAgent}
+            />
           </div>
         </SidebarInset>
       </div>

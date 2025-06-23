@@ -2,38 +2,58 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, CheckCircle, Clock, Star } from "lucide-react";
 
-const stats = [
-  {
-    title: "Total de Agentes",
-    value: "6",
-    icon: Users,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50"
-  },
-  {
-    title: "Agentes Ativos",
-    value: "6",
-    icon: CheckCircle,
-    color: "text-green-600",
-    bgColor: "bg-green-50"
-  },
-  {
-    title: "Online Agora",
-    value: "0",
-    icon: Clock,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50"
-  },
-  {
-    title: "Média de Avaliação",
-    value: "4.8",
-    icon: Star,
-    color: "text-orange-600",
-    bgColor: "bg-orange-50"
-  }
-];
+interface Agent {
+  id: string;
+  status: string;
+  rating: number;
+  isOnline: boolean;
+}
 
-export const AgentStats = () => {
+interface AgentStatsProps {
+  agents: Agent[];
+}
+
+export const AgentStats = ({ agents }: AgentStatsProps) => {
+  const totalAgents = agents.length;
+  const activeAgents = agents.filter(agent => agent.status.toLowerCase() !== 'desativado').length;
+  const onlineAgents = agents.filter(agent => 
+    agent.status.toLowerCase() === 'online' || agent.isOnline
+  ).length;
+  const averageRating = totalAgents > 0 
+    ? (agents.reduce((sum, agent) => sum + agent.rating, 0) / totalAgents).toFixed(1)
+    : "0.0";
+
+  const stats = [
+    {
+      title: "Total de Agentes",
+      value: totalAgents.toString(),
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Agentes Ativos",
+      value: activeAgents.toString(),
+      icon: CheckCircle,
+      color: "text-green-600",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "Online Agora",
+      value: onlineAgents.toString(),
+      icon: Clock,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    {
+      title: "Média de Avaliação",
+      value: averageRating,
+      icon: Star,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
+    }
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {stats.map((stat) => {
