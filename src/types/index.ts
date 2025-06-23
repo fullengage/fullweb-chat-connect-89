@@ -1,4 +1,3 @@
-
 export interface Agent {
   id: string
   name: string
@@ -55,7 +54,7 @@ export interface Conversation {
     avatar_url?: string
   }
   assignee?: {
-    id: string // Changed from number to string to match Supabase UUIDs
+    id: string // Fixed: Changed from number to string to match Supabase UUIDs
     name: string
     avatar_url?: string
   }
