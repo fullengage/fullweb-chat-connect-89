@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
-import Index from "@/pages/Index";
+import Landing from "@/pages/Landing";
 import Conversations from "@/pages/Conversations";
 import Analytics from "@/pages/Analytics";
 import Email from "@/pages/Email";
@@ -39,15 +39,11 @@ function AppRoutes() {
     <Routes>
       <Route 
         path="/auth" 
-        element={user ? <Navigate to="/" replace /> : <Auth />} 
+        element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
       />
       <Route 
         path="/" 
-        element={
-          <ProtectedRoute>
-            <Index />
-          </ProtectedRoute>
-        } 
+        element={<Landing />}
       />
       <Route 
         path="/dashboard" 
