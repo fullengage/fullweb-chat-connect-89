@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable"
 import { KanbanColumn } from "./KanbanColumn"
 import { KanbanCard } from "./KanbanCard"
-import { Clock, AlertCircle, CheckCircle, Users, History } from "lucide-react"
+import { Clock, AlertCircle, CheckCircle, Users } from "lucide-react"
 import { ConversationForStats } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
@@ -34,15 +34,17 @@ const statusColumns = [
     icon: Clock,
     color: "text-green-600",
     bgColor: "bg-green-50",
-    borderColor: "border-green-200"
+    borderColor: "border-green-200",
+    status: "open"
   },
   {
     id: "pending",
-    title: "Pendentes",
+    title: "Pendentes", 
     icon: AlertCircle,
     color: "text-yellow-600",
     bgColor: "bg-yellow-50",
-    borderColor: "border-yellow-200"
+    borderColor: "border-yellow-200",
+    status: "pending"
   },
   {
     id: "resolved",
@@ -50,7 +52,8 @@ const statusColumns = [
     icon: CheckCircle,
     color: "text-blue-600",
     bgColor: "bg-blue-50",
-    borderColor: "border-blue-200"
+    borderColor: "border-blue-200",
+    status: "resolved"
   },
   {
     id: "unassigned",
@@ -58,7 +61,8 @@ const statusColumns = [
     icon: Users,
     color: "text-orange-600",
     bgColor: "bg-orange-50",
-    borderColor: "border-orange-200"
+    borderColor: "border-orange-200",
+    status: "open" // Unassigned conversations keep their current status
   }
 ]
 
@@ -108,10 +112,12 @@ export const KanbanBoard = ({
 
     if (!conversation) return
 
-    // Determinar o novo status baseado na coluna
-    let newStatus = newColumnId
+    // Find the column configuration
+    const targetColumn = statusColumns.find(col => col.id === newColumnId)
+    if (!targetColumn) return
+
+    // Handle unassigned column specially
     if (newColumnId === 'unassigned') {
-      // Se movido para não atribuídas, manter status atual mas remover assignee
       toast({
         title: "Conversa não atribuída",
         description: "Para atribuir a conversa, use o menu de ações.",
@@ -119,6 +125,9 @@ export const KanbanBoard = ({
       })
       return
     }
+
+    // Get the actual status to save
+    const newStatus = targetColumn.status
 
     // Validar se a mudança é válida
     if (conversation.status === newStatus) return
@@ -145,14 +154,12 @@ export const KanbanBoard = ({
 
     // Executar a mudança
     if (onStatusChange) {
+      console.log(`Moving conversation ${conversationId} from ${conversation.status} to ${newStatus}`)
       onStatusChange(conversationId, newStatus)
-      
-      // Log da mudança para histórico
-      console.log(`Conversation ${conversationId} moved from ${conversation.status} to ${newStatus}`)
       
       toast({
         title: "Status atualizado",
-        description: `Conversa movida para ${statusColumns.find(col => col.id === newStatus)?.title}`,
+        description: `Conversa movida para ${targetColumn.title}`,
         variant: "default",
       })
     }
