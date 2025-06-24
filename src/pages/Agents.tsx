@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -36,7 +35,8 @@ const Agents = () => {
         role: newAgentData.role,
         status: newAgentData.status,
         teams: newAgentData.teams,
-        is_active: true
+        is_active: true,
+        last_activity: new Date().toISOString()
       });
       setIsNewAgentOpen(false);
     } catch (error) {
