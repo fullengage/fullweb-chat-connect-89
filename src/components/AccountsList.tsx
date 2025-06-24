@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, MessageSquare, MapPin, Industry, Calendar, MoreHorizontal } from "lucide-react";
+import { Building2, Users, MessageSquare, MapPin, Factory, Calendar, MoreHorizontal } from "lucide-react";
 import { Account } from "@/hooks/useAccounts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -133,7 +133,7 @@ export const AccountsList = ({
                     )}
                     {account.industry && (
                       <div className="flex items-center space-x-2">
-                        <Industry className="h-4 w-4 text-gray-400" />
+                        <Factory className="h-4 w-4 text-gray-400" />
                         <span className="text-gray-600 truncate">
                           {account.industry}
                         </span>

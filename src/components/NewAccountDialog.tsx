@@ -64,7 +64,7 @@ export const NewAccountDialog = ({ open, onOpenChange, onSave }: NewAccountDialo
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
