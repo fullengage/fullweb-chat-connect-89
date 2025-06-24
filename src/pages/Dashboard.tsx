@@ -6,7 +6,7 @@ import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationStats } from "@/components/ConversationStats"
 import { ConversationManagement } from "@/components/ConversationManagement"
 import { InboxManagement } from "@/components/InboxManagement"
-import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, useUpdateConversationKanbanStage, type User } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, type User } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
@@ -57,7 +57,6 @@ export default function Dashboard() {
   } = useInboxes(accountIdNumber)
 
   const updateStatus = useUpdateConversationStatus()
-  const updateKanbanStage = useUpdateConversationKanbanStage()
 
   const handleRefresh = () => {
     refetchConversations()
@@ -67,12 +66,26 @@ export default function Dashboard() {
     })
   }
 
-  const handleStatusChange = (conversationId: number, newStatus: string) => {
-    updateStatus.mutate({ conversationId, status: newStatus })
-  }
-
-  const handleKanbanStageChange = (conversationId: number, newStage: string) => {
-    updateKanbanStage.mutate({ conversationId, kanbanStage: newStage })
+  const handleKanbanStatusChange = async (conversationId: number, newStatus: string) => {
+    try {
+      await updateStatus.mutateAsync({ conversationId, status: newStatus })
+      
+      // Atualizar dados para refletir mudança
+      refetchConversations()
+      
+      toast({
+        title: "Status atualizado",
+        description: `Conversa movida para ${newStatus}`,
+        variant: "default",
+      })
+    } catch (error) {
+      console.error('Error updating conversation status:', error)
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status da conversa",
+        variant: "destructive",
+      })
+    }
   }
 
   const filteredConversations = conversations.filter((conversation: Conversation) => {
@@ -189,7 +202,7 @@ export default function Dashboard() {
                     onConversationClick={(conversation) => {
                       console.log('Opening conversation:', conversation.id)
                     }}
-                    onStatusChange={handleKanbanStageChange}
+                    onStatusChange={handleKanbanStatusChange}
                     isLoading={conversationsLoading}
                   />
                 </TabsContent>

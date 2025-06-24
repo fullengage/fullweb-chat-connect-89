@@ -14,12 +14,11 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { KanbanColumn } from "./KanbanColumn"
 import { KanbanCard } from "./KanbanCard"
-import { Clock, AlertCircle, CheckCircle, Users } from "lucide-react"
+import { Clock, AlertCircle, CheckCircle, Users, History } from "lucide-react"
 import { ConversationForStats } from "@/types"
+import { useToast } from "@/hooks/use-toast"
 
 interface KanbanBoardProps {
   conversations: ConversationForStats[]
@@ -70,6 +69,8 @@ export const KanbanBoard = ({
   isLoading 
 }: KanbanBoardProps) => {
   const [activeConversation, setActiveConversation] = useState<ConversationForStats | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const { toast } = useToast()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -81,18 +82,20 @@ export const KanbanBoard = ({
 
   // Organizar conversas por status
   const conversationsByStatus = {
-    open: conversations.filter(c => c.status === 'open'),
-    pending: conversations.filter(c => c.status === 'pending'),
-    resolved: conversations.filter(c => c.status === 'resolved'),
+    open: conversations.filter(c => c.status === 'open' && c.assignee),
+    pending: conversations.filter(c => c.status === 'pending' && c.assignee),
+    resolved: conversations.filter(c => c.status === 'resolved' && c.assignee),
     unassigned: conversations.filter(c => !c.assignee)
   }
 
   const handleDragStart = (event: DragStartEvent) => {
+    setIsDragging(true)
     const conversation = conversations.find(c => c.id.toString() === event.active.id)
     setActiveConversation(conversation || null)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setIsDragging(false)
     setActiveConversation(null)
     
     const { active, over } = event
@@ -100,14 +103,58 @@ export const KanbanBoard = ({
     if (!over) return
 
     const conversationId = parseInt(active.id.toString())
-    const newStatus = over.id.toString()
+    const newColumnId = over.id.toString()
+    const conversation = conversations.find(c => c.id === conversationId)
 
-    // Se a conversa foi movida para uma nova coluna de status
-    if (onStatusChange && statusColumns.some(col => col.id === newStatus)) {
-      const conversation = conversations.find(c => c.id === conversationId)
-      if (conversation && conversation.status !== newStatus && newStatus !== 'unassigned') {
-        onStatusChange(conversationId, newStatus)
-      }
+    if (!conversation) return
+
+    // Determinar o novo status baseado na coluna
+    let newStatus = newColumnId
+    if (newColumnId === 'unassigned') {
+      // Se movido para não atribuídas, manter status atual mas remover assignee
+      toast({
+        title: "Conversa não atribuída",
+        description: "Para atribuir a conversa, use o menu de ações.",
+        variant: "default",
+      })
+      return
+    }
+
+    // Validar se a mudança é válida
+    if (conversation.status === newStatus) return
+
+    // Aplicar regras de negócio
+    if (conversation.status === 'resolved' && newStatus !== 'resolved') {
+      toast({
+        title: "Operação não permitida",
+        description: "Conversas resolvidas não podem ser reabertas via Kanban. Use o menu de ações.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Se a conversa não tem assignee e não está indo para unassigned
+    if (!conversation.assignee && newColumnId !== 'unassigned') {
+      toast({
+        title: "Conversa não atribuída",
+        description: "Atribua a conversa a um agente antes de alterar o status.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Executar a mudança
+    if (onStatusChange) {
+      onStatusChange(conversationId, newStatus)
+      
+      // Log da mudança para histórico
+      console.log(`Conversation ${conversationId} moved from ${conversation.status} to ${newStatus}`)
+      
+      toast({
+        title: "Status atualizado",
+        description: `Conversa movida para ${statusColumns.find(col => col.id === newStatus)?.title}`,
+        variant: "default",
+      })
     }
   }
 
@@ -115,16 +162,14 @@ export const KanbanBoard = ({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statusColumns.map((column) => (
-          <Card key={column.id} className={`${column.bgColor} ${column.borderColor} border-2`}>
-            <CardHeader className="pb-3">
-              <div className="h-6 bg-gray-200 rounded animate-pulse" />
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <div key={column.id} className={`${column.bgColor} ${column.borderColor} border-2 rounded-lg p-4 animate-pulse`}>
+            <div className="h-6 bg-gray-200 rounded mb-4" />
+            <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded animate-pulse" />
+                <div key={i} className="h-24 bg-gray-200 rounded" />
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     )
@@ -156,15 +201,22 @@ export const KanbanBoard = ({
                 items={columnConversations.map(c => c.id.toString())}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-3">
+                <div className="space-y-3 min-h-[400px]">
                   {columnConversations.map((conversation) => (
                     <KanbanCard
                       key={conversation.id}
                       id={conversation.id.toString()}
                       conversation={conversation}
                       onClick={() => onConversationClick(conversation)}
+                      isDragging={activeConversation?.id === conversation.id && isDragging}
                     />
                   ))}
+                  {columnConversations.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <Icon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Nenhuma conversa</p>
+                    </div>
+                  )}
                 </div>
               </SortableContext>
             </KanbanColumn>
@@ -174,7 +226,7 @@ export const KanbanBoard = ({
 
       <DragOverlay>
         {activeConversation && (
-          <div className="rotate-6 opacity-80">
+          <div className="rotate-2 opacity-90 transform scale-105 shadow-lg">
             <KanbanCard
               id={activeConversation.id.toString()}
               conversation={activeConversation}

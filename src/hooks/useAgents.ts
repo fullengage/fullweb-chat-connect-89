@@ -61,7 +61,7 @@ export const useAgents = () => {
         .from('agents')
         .select(`
           *,
-          agent_stats!inner (*)
+          agent_stats (*)
         `)
         .eq('is_active', true)
         .order('name')
@@ -78,11 +78,13 @@ export const useAgents = () => {
 
       // Transform data to match the expected format
       const agentsWithStats: AgentWithStats[] = agentsData?.map(agent => {
-        const stats = agent.agent_stats[0] // Get today's stats
+        const stats = agent.agent_stats?.[0] // Get today's stats
         const initials = agent.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
         
         return {
           ...agent,
+          role: agent.role as 'agent' | 'supervisor' | 'administrator', // Type assertion
+          status: agent.status as 'online' | 'offline' | 'busy' | 'away', // Type assertion
           stats,
           initials,
           isOnline: agent.status === 'online',
@@ -146,7 +148,10 @@ export const useCreateAgent = () => {
     mutationFn: async (agentData: Omit<Agent, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('agents')
-        .insert(agentData)
+        .insert({
+          ...agentData,
+          last_activity: new Date().toISOString()
+        })
         .select()
         .single()
 

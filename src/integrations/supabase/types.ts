@@ -389,6 +389,56 @@ export type Database = {
         }
         Relationships: []
       }
+      teams: {
+        Row: {
+          account_id: number
+          created_at: string
+          department: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          leader_id: string | null
+          member_ids: string[] | null
+          name: string
+          performance_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: number
+          created_at?: string
+          department: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          leader_id?: string | null
+          member_ids?: string[] | null
+          name: string
+          performance_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: number
+          created_at?: string
+          department?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          leader_id?: string | null
+          member_ids?: string[] | null
+          name?: string
+          performance_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           account_id: number | null
