@@ -60,7 +60,7 @@ export class EmailService {
       }
     }
 
-    console.log('Testando conexão com:', {
+    console.log('Testando conexão com servidor real:', {
       server: this.config.incomingServer,
       port: this.config.imapPort,
       username: this.config.username,
@@ -68,100 +68,33 @@ export class EmailService {
     })
 
     try {
-      // Simulação de teste de conexão
-      // Em uma implementação real, isso faria uma conexão TCP/SSL
-      const response = await this.simulateConnection()
+      // Importa e usa o serviço real
+      const { RealEmailService } = await import('./realEmailService')
+      const realService = new RealEmailService(this.config)
       
-      if (response.success) {
-        return {
-          success: true,
-          message: 'Conexão estabelecida com sucesso',
-          details: response.details
-        }
-      } else {
-        return {
-          success: false,
-          message: response.message,
-          details: response.details
+      await realService.connect()
+      await realService.disconnect()
+      
+      return {
+        success: true,
+        message: 'Conexão estabelecida com sucesso no servidor real',
+        details: {
+          server: this.config.incomingServer,
+          port: this.config.imapPort,
+          ssl: this.config.useSSL,
+          authenticated: true,
+          protocol: this.config.protocol
         }
       }
     } catch (error) {
-      console.error('Erro na conexão:', error)
+      console.error('Erro na conexão real:', error)
       return {
         success: false,
         message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        details: { error }
-      }
-    }
-  }
-
-  private async simulateConnection(): Promise<{ success: boolean; message: string; details: any }> {
-    // Simula diferentes cenários de conexão baseado na configuração
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Simula delay de rede
-
-    const { incomingServer, imapPort, username, password } = this.config!
-
-    // Validações básicas
-    if (!username || !password) {
-      return {
-        success: false,
-        message: 'Credenciais incompletas',
-        details: { error: 'Username ou password não fornecidos' }
-      }
-    }
-
-    if (!incomingServer) {
-      return {
-        success: false,
-        message: 'Servidor não configurado',
-        details: { error: 'Servidor de entrada não especificado' }
-      }
-    }
-
-    // Simula diferentes cenários baseado no servidor
-    if (incomingServer.includes('fullweb.com.br')) {
-      // Simula problemas comuns com este servidor
-      if (password.length < 8) {
-        return {
-          success: false,
-          message: 'Falha na autenticação - senha muito curta',
-          details: { 
-            error: 'AUTH_FAILED',
-            suggestion: 'Verifique se está usando uma senha de aplicativo válida'
-          }
+        details: { 
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+          suggestion: 'Verifique as credenciais e configurações do servidor'
         }
-      }
-      
-      if (imapPort !== '993' && imapPort !== '143') {
-        return {
-          success: false,
-          message: `Porta ${imapPort} não é suportada`,
-          details: { 
-            error: 'INVALID_PORT',
-            suggestion: 'Use porta 993 para IMAP com SSL ou 143 para IMAP sem SSL'
-          }
-        }
-      }
-
-      return {
-        success: true,
-        message: 'Conexão simulada com sucesso',
-        details: {
-          server: incomingServer,
-          port: imapPort,
-          ssl: true,
-          authenticated: true
-        }
-      }
-    }
-
-    // Para outros servidores
-    return {
-      success: false,
-      message: 'Servidor não reconhecido ou não suportado',
-      details: {
-        error: 'UNKNOWN_SERVER',
-        suggestion: 'Verifique as configurações do servidor'
       }
     }
   }
@@ -171,46 +104,23 @@ export class EmailService {
       throw new Error('Configuração de email não encontrada')
     }
 
-    const connectionTest = await this.testConnection()
-    if (!connectionTest.success) {
-      throw new Error(`Falha na conexão: ${connectionTest.message}`)
+    console.log('Buscando emails do servidor real...')
+
+    try {
+      // Importa e usa o serviço real
+      const { RealEmailService } = await import('./realEmailService')
+      const realService = new RealEmailService(this.config)
+      
+      const emails = await realService.fetchEmails(50)
+      await realService.disconnect()
+      
+      console.log(`${emails.length} emails recuperados do servidor`)
+      return emails
+      
+    } catch (error) {
+      console.error('Erro ao buscar emails:', error)
+      throw new Error(`Falha ao buscar emails: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
-
-    // Por enquanto, retorna emails mock após validar a conexão
-    return this.getMockEmails()
-  }
-
-  private getMockEmails(): EmailMessage[] {
-    return [
-      {
-        id: "1",
-        from: "cliente@empresa.com",
-        fromName: "João Silva",
-        to: this.config?.username || "adm@fullweb.com.br",
-        subject: "Dúvida sobre o produto",
-        preview: "Gostaria de saber mais informações sobre os preços...",
-        body: "Olá,\n\nGostaria de saber mais informações sobre os preços dos seus produtos. Poderia me enviar uma tabela completa?\n\nAguardo retorno.\n\nObrigado,\nJoão Silva",
-        date: new Date(),
-        isRead: false,
-        isImportant: true,
-        hasAttachments: false,
-        folder: "inbox"
-      },
-      {
-        id: "2",
-        from: "contato@clienteabc.com.br",
-        fromName: "Maria Santos",
-        to: this.config?.username || "adm@fullweb.com.br",
-        subject: "Proposta comercial",
-        preview: "Seguem em anexo os documentos solicitados...",
-        body: "Prezados,\n\nSeguem em anexo os documentos solicitados para a proposta comercial.\n\nAguardo retorno.\n\nAtenciosamente,\nMaria Santos",
-        date: new Date(Date.now() - 86400000),
-        isRead: true,
-        isImportant: false,
-        hasAttachments: true,
-        folder: "inbox"
-      }
-    ]
   }
 }
 
