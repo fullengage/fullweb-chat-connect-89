@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import {
   CheckCircle,
   Shield,
   Headphones,
-  ExclamationTriangle,
+  AlertTriangle,
   Clock,
   TrendingDown,
   Star,
@@ -208,7 +207,7 @@ const Landing = () => {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center p-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ExclamationTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-8 w-8 text-red-500" />
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-800">Clientes Perdidos</h3>
               <p className="text-gray-600">

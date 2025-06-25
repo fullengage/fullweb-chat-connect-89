@@ -86,7 +86,7 @@ export const ChatwootFilters = ({
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
-          <Select value={status} onValueChange={onStatusChange}>
+          <Select value={status || 'all'} onValueChange={onStatusChange}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione o status" />
             </SelectTrigger>
@@ -101,7 +101,7 @@ export const ChatwootFilters = ({
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Atendente</label>
-          <Select value={assigneeId} onValueChange={onAssigneeChange} disabled={isLoading}>
+          <Select value={assigneeId || 'all'} onValueChange={onAssigneeChange} disabled={isLoading}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione o atendente" />
             </SelectTrigger>
@@ -119,7 +119,7 @@ export const ChatwootFilters = ({
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Canal</label>
-          <Select value={inboxId} onValueChange={onInboxChange} disabled={isLoading}>
+          <Select value={inboxId || 'all'} onValueChange={onInboxChange} disabled={isLoading}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione o canal" />
             </SelectTrigger>
