@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,8 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
   const handleConnectionTestComplete = (success: boolean) => {
     setConnectionTested(success)
   }
+
+  const isFormValid = formData.username && formData.password && formData.incomingServer && formData.outgoingServer
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -185,23 +188,37 @@ export const EmailConfiguration = ({ onSave }: EmailConfigurationProps) => {
             <Button 
               onClick={handleSave} 
               className="flex-1"
-              disabled={!connectionTested}
+              disabled={!isFormValid}
             >
               <Mail className="h-4 w-4 mr-2" />
               Salvar Configuração
             </Button>
           </div>
 
-          {!connectionTested && formData.username && formData.password && (
+          {!isFormValid && (
             <p className="text-sm text-amber-600 text-center">
-              Teste a conexão antes de salvar a configuração
+              Preencha todos os campos obrigatórios para salvar a configuração
+            </p>
+          )}
+
+          {isFormValid && !connectionTested && (
+            <p className="text-sm text-blue-600 text-center">
+              Recomendamos testar a conexão antes de salvar para garantir que as configurações estão corretas
+            </p>
+          )}
+
+          {connectionTested && (
+            <p className="text-sm text-green-600 text-center">
+              ✅ Conexão testada com sucesso! Configuração pronta para ser salva.
             </p>
           )}
         </CardContent>
       </Card>
 
       {/* Componente de teste de conexão */}
-      <EmailConnectionTest onTestComplete={handleConnectionTestComplete} />
+      {isFormValid && (
+        <EmailConnectionTest onTestComplete={handleConnectionTestComplete} />
+      )}
 
       <Card>
         <CardHeader>

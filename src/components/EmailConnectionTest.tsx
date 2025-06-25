@@ -35,10 +35,11 @@ export const EmailConnectionTest = ({ onTestComplete }: EmailConnectionTestProps
       setTestResult(result)
       onTestComplete?.(result.success)
     } catch (error) {
-      setTestResult({
+      const errorResult = {
         success: false,
         message: `Erro inesperado: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
-      })
+      }
+      setTestResult(errorResult)
       onTestComplete?.(false)
     } finally {
       setIsLoading(false)
