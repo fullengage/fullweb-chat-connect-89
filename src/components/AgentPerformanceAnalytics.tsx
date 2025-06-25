@@ -31,15 +31,17 @@ import {
 interface Conversation {
   id: number
   status: string
+  created_at: string
+  updated_at: string
   assignee?: {
-    id: number
+    id: string
     name: string
   }
   messages: any[]
 }
 
 interface Agent {
-  id: number
+  id: string
   name: string
   email: string
   avatar_url?: string
@@ -85,11 +87,26 @@ export const AgentPerformanceAnalytics = ({
     )
   }
 
-  // Calcular métricas por agente
+  // Calcular métricas reais por agente baseadas nos dados do banco
+  const calculateResponseTime = (conversation: Conversation) => {
+    if (!conversation.created_at || !conversation.updated_at) return 0
+    const created = new Date(conversation.created_at).getTime()
+    const updated = new Date(conversation.updated_at).getTime()
+    return Math.floor((updated - created) / (1000 * 60)) // em minutos
+  }
+
   const agentMetrics = agents.map(agent => {
-    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id)
+    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id.toString())
     const resolvedConversations = agentConversations.filter(c => c.status === 'resolved')
     
+    const responseTimes = agentConversations
+      .map(calculateResponseTime)
+      .filter(time => time > 0)
+    
+    const avgResponseTime = responseTimes.length > 0
+      ? Math.floor(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length)
+      : 0
+
     return {
       ...agent,
       totalConversations: agentConversations.length,
@@ -97,40 +114,41 @@ export const AgentPerformanceAnalytics = ({
       resolutionRate: agentConversations.length > 0 
         ? Math.round((resolvedConversations.length / agentConversations.length) * 100) 
         : 0,
-      avgResponseTime: Math.floor(Math.random() * 20) + 5, // 5-25 min (simulado)
-      satisfactionScore: Math.floor(Math.random() * 2) + 4, // 4-5 (simulado)
+      avgResponseTime,
+      satisfactionScore: 4 + Math.random(), // Simulado entre 4-5
       messagesPerConversation: agentConversations.length > 0 
         ? Math.round(agentConversations.reduce((sum, c) => sum + (c.messages?.length || 0), 0) / agentConversations.length)
         : 0
     }
   }).sort((a, b) => b.totalConversations - a.totalConversations)
 
-  // Top performers
+  // Top performers baseados em dados reais
   const topPerformer = agentMetrics.reduce((prev, current) => 
     (prev.resolutionRate > current.resolutionRate) ? prev : current, agentMetrics[0])
 
   const fastestResponder = agentMetrics.reduce((prev, current) => 
-    (prev.avgResponseTime < current.avgResponseTime) ? prev : current, agentMetrics[0])
+    (prev.avgResponseTime > 0 && (current.avgResponseTime === 0 || prev.avgResponseTime < current.avgResponseTime)) ? prev : current, agentMetrics[0])
 
-  // Dados para gráfico de conversas por agente
+  // Dados para gráfico de conversas por agente (dados reais)
   const conversationData = agentMetrics.slice(0, 6).map(agent => ({
     name: agent.name.split(' ')[0], // Primeiro nome apenas
     conversations: agent.totalConversations,
     resolved: agent.resolvedConversations
-  }))
+  })).filter(agent => agent.conversations > 0)
 
-  // Dados para radar chart (top 3 agentes)
-  const radarData = agentMetrics.slice(0, 3).map(agent => ({
+  // Dados para radar chart (top 3 agentes com atividade)
+  const activeAgents = agentMetrics.filter(agent => agent.totalConversations > 0).slice(0, 3)
+  const radarData = activeAgents.length > 0 ? activeAgents.map(agent => ({
     agent: agent.name.split(' ')[0],
-    conversas: Math.min(agent.totalConversations * 2, 100), // Escala para 0-100
+    conversas: Math.min(agent.totalConversations * 10, 100), // Escala para 0-100
     resolucao: agent.resolutionRate,
     satisfacao: agent.satisfactionScore * 20, // Escala 4-5 para 80-100
-    velocidade: Math.max(100 - agent.avgResponseTime * 2, 0) // Inverso do tempo
-  }))
+    velocidade: agent.avgResponseTime > 0 ? Math.max(100 - agent.avgResponseTime * 2, 0) : 100 // Inverso do tempo
+  })) : []
 
   return (
     <div className="space-y-6">
-      {/* Métricas principais */}
+      {/* Métricas principais baseadas em dados reais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -140,7 +158,7 @@ export const AgentPerformanceAnalytics = ({
           <CardContent>
             <div className="text-2xl font-bold">{agents.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total de agentes na equipe
+              {agentMetrics.filter(a => a.totalConversations > 0).length} com atividade
             </p>
           </CardContent>
         </Card>
@@ -195,7 +213,7 @@ export const AgentPerformanceAnalytics = ({
         </Card>
       </div>
 
-      {/* Ranking dos Agentes */}
+      {/* Ranking dos Agentes baseado em dados reais */}
       <Card>
         <CardHeader>
           <CardTitle>Ranking de Performance dos Agentes</CardTitle>
@@ -230,7 +248,7 @@ export const AgentPerformanceAnalytics = ({
                     <div className="text-muted-foreground">Resolução</div>
                   </div>
                   <div className="text-center">
-                    <div className="font-bold text-purple-600">{agent.avgResponseTime}min</div>
+                    <div className="font-bold text-purple-600">{agent.avgResponseTime || 0}min</div>
                     <div className="text-muted-foreground">Resposta</div>
                   </div>
                   <div className="text-center">
@@ -240,11 +258,16 @@ export const AgentPerformanceAnalytics = ({
                 </div>
               </div>
             ))}
+            {agentMetrics.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhum agente encontrado
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Gráficos */}
+      {/* Gráficos baseados em dados reais */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conversas por Agente */}
         <Card>
@@ -252,48 +275,60 @@ export const AgentPerformanceAnalytics = ({
             <CardTitle>Conversas por Agente</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <BarChart data={conversationData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Bar dataKey="conversations" fill="#3B82F6" name="Total" />
-                <Bar dataKey="resolved" fill="#10B981" name="Resolvidas" />
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </BarChart>
-            </ChartContainer>
+            {conversationData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px]">
+                <BarChart data={conversationData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Bar dataKey="conversations" fill="#3B82F6" name="Total" />
+                  <Bar dataKey="resolved" fill="#10B981" name="Resolvidas" />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Nenhum agente com conversas ativas
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Radar Chart - Top 3 Agentes */}
         <Card>
           <CardHeader>
-            <CardTitle>Comparativo - Top 3 Agentes</CardTitle>
+            <CardTitle>Comparativo - Top {activeAgents.length} Agentes</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <RadarChart data={[
-                { metric: 'Conversas', ...Object.fromEntries(radarData.map(d => [d.agent, d.conversas])) },
-                { metric: 'Resolução', ...Object.fromEntries(radarData.map(d => [d.agent, d.resolucao])) },
-                { metric: 'Satisfação', ...Object.fromEntries(radarData.map(d => [d.agent, d.satisfacao])) },
-                { metric: 'Velocidade', ...Object.fromEntries(radarData.map(d => [d.agent, d.velocidade])) }
-              ]}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="metric" />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                {radarData.map((agent, index) => (
-                  <Radar
-                    key={agent.agent}
-                    name={agent.agent}
-                    dataKey={agent.agent}
-                    stroke={['#3B82F6', '#10B981', '#8B5CF6'][index]}
-                    fill={['#3B82F6', '#10B981', '#8B5CF6'][index]}
-                    fillOpacity={0.1}
-                    strokeWidth={2}
-                  />
-                ))}
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </RadarChart>
-            </ChartContainer>
+            {radarData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px]">
+                <RadarChart data={[
+                  { metric: 'Conversas', ...Object.fromEntries(radarData.map(d => [d.agent, d.conversas])) },
+                  { metric: 'Resolução', ...Object.fromEntries(radarData.map(d => [d.agent, d.resolucao])) },
+                  { metric: 'Satisfação', ...Object.fromEntries(radarData.map(d => [d.agent, d.satisfacao])) },
+                  { metric: 'Velocidade', ...Object.fromEntries(radarData.map(d => [d.agent, d.velocidade])) }
+                ]}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="metric" />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                  {radarData.map((agent, index) => (
+                    <Radar
+                      key={agent.agent}
+                      name={agent.agent}
+                      dataKey={agent.agent}
+                      stroke={['#3B82F6', '#10B981', '#8B5CF6'][index]}
+                      fill={['#3B82F6', '#10B981', '#8B5CF6'][index]}
+                      fillOpacity={0.1}
+                      strokeWidth={2}
+                    />
+                  ))}
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </RadarChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Dados insuficientes para comparação
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

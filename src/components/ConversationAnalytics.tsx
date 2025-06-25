@@ -33,13 +33,17 @@ interface Conversation {
   status: string
   created_at: string
   updated_at: string
-  inbox: {
+  inbox?: {
     id: number
     name: string
     channel_type: string
   }
   messages: any[]
   assignee?: {
+    id: string
+    name: string
+  }
+  contact?: {
     id: number
     name: string
   }
@@ -88,29 +92,29 @@ export const ConversationAnalytics = ({
     )
   }
 
-  // Estatísticas gerais
+  // Estatísticas reais baseadas nos dados do banco
   const totalConversations = conversations.length
   const openConversations = conversations.filter(c => c.status === 'open').length
   const pendingConversations = conversations.filter(c => c.status === 'pending').length
   const resolvedConversations = conversations.filter(c => c.status === 'resolved').length
 
-  // Dados para gráfico de status
+  // Dados para gráfico de status usando dados reais
   const statusData = [
     { name: 'Abertas', value: openConversations, color: '#10B981' },
     { name: 'Pendentes', value: pendingConversations, color: '#F59E0B' },
     { name: 'Resolvidas', value: resolvedConversations, color: '#6B7280' }
-  ]
+  ].filter(item => item.value > 0)
 
-  // Dados para gráfico de conversas por caixa de entrada
+  // Dados para gráfico de conversas por caixa de entrada usando dados reais
   const inboxData = inboxes.map(inbox => {
-    const count = conversations.filter(c => c.inbox.id === inbox.id).length
+    const count = conversations.filter(c => c.inbox?.id === inbox.id).length
     return {
       name: inbox.name,
       conversations: count
     }
   }).filter(item => item.conversations > 0)
 
-  // Dados para gráfico de conversas por dia (últimos 7 dias)
+  // Dados para gráfico de conversas por dia (últimos 7 dias) usando dados reais
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() - i)
@@ -119,7 +123,7 @@ export const ConversationAnalytics = ({
 
   const dailyData = last7Days.map(date => {
     const count = conversations.filter(c => 
-      c.created_at.split('T')[0] === date
+      c.created_at && c.created_at.split('T')[0] === date
     ).length
     return {
       date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
@@ -127,13 +131,37 @@ export const ConversationAnalytics = ({
     }
   })
 
-  // Estatísticas de crescimento (mock)
-  const growthRate = Math.floor(Math.random() * 20) - 10 // -10% a +10%
-  const avgResolutionTime = "2h 15min"
+  // Calcular taxa de crescimento baseada nos dados reais
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  
+  const todayCount = conversations.filter(c => c.created_at?.split('T')[0] === today).length
+  const yesterdayCount = conversations.filter(c => c.created_at?.split('T')[0] === yesterday).length
+  
+  const growthRate = yesterdayCount > 0 
+    ? Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100)
+    : 0
+
+  // Calcular tempo médio de resolução baseado nos dados reais
+  const resolvedWithTimes = conversations.filter(c => 
+    c.status === 'resolved' && c.created_at && c.updated_at
+  )
+  
+  const avgResolutionTimeMs = resolvedWithTimes.length > 0
+    ? resolvedWithTimes.reduce((sum, c) => {
+        const created = new Date(c.created_at).getTime()
+        const updated = new Date(c.updated_at).getTime()
+        return sum + (updated - created)
+      }, 0) / resolvedWithTimes.length
+    : 0
+
+  const avgResolutionTime = avgResolutionTimeMs > 0
+    ? formatDistanceToNow(new Date(Date.now() - avgResolutionTimeMs), { locale: ptBR })
+    : "N/A"
 
   return (
     <div className="space-y-6">
-      {/* Métricas principais */}
+      {/* Métricas principais usando dados reais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -149,7 +177,7 @@ export const ConversationAnalytics = ({
                 <TrendingDown className="h-3 w-3 text-red-600" />
               )}
               <span className={`text-xs ${growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Math.abs(growthRate)}% em relação ao período anterior
+                {Math.abs(growthRate)}% desde ontem
               </span>
             </div>
           </CardContent>
@@ -176,7 +204,7 @@ export const ConversationAnalytics = ({
           <CardContent>
             <div className="text-2xl font-bold">{avgResolutionTime}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Baseado nas últimas conversas resolvidas
+              Baseado em {resolvedWithTimes.length} conversas resolvidas
             </p>
           </CardContent>
         </Card>
@@ -197,7 +225,7 @@ export const ConversationAnalytics = ({
         </Card>
       </div>
 
-      {/* Gráficos */}
+      {/* Gráficos usando dados reais */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Distribuição por Status */}
         <Card>
@@ -205,23 +233,29 @@ export const ConversationAnalytics = ({
             <CardTitle>Distribuição por Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </PieChart>
-            </ChartContainer>
+            {statusData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px]">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Nenhum dado disponível
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -267,7 +301,7 @@ export const ConversationAnalytics = ({
           </Card>
         )}
 
-        {/* Resumo de Atividade */}
+        {/* Resumo de Atividade usando dados reais */}
         <Card>
           <CardHeader>
             <CardTitle>Resumo de Atividade</CardTitle>
@@ -286,6 +320,7 @@ export const ConversationAnalytics = ({
               <Badge variant="outline">
                 {conversations.filter(c => 
                   c.status === 'resolved' && 
+                  c.updated_at &&
                   new Date(c.updated_at).toDateString() === new Date().toDateString()
                 ).length}
               </Badge>

@@ -6,55 +6,57 @@ import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationAnalytics } from "@/components/ConversationAnalytics"
 import { ResponseTimeAnalytics } from "@/components/ResponseTimeAnalytics"
 import { AgentPerformanceAnalytics } from "@/components/AgentPerformanceAnalytics"
-import { useChatwootConversations, useChatwootAgents, useChatwootInboxes } from "@/hooks/useChatwootData"
+import { useConversations, useUsers, useInboxes } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, BarChart3, Clock, Users, TrendingUp } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Analytics() {
-  const [accountId, setAccountId] = useState("")
   const [status, setStatus] = useState("all")
   const [assigneeId, setAssigneeId] = useState("all")
   const [inboxId, setInboxId] = useState("all")
+  const [accountId, setAccountId] = useState("1") // Default account ID
   const [activeTab, setActiveTab] = useState("conversations")
   const { toast } = useToast()
 
-  const accountIdNumber = accountId ? parseInt(accountId) : 0
+  const accountIdNumber = accountId ? parseInt(accountId) : 1
 
-  // Build filters object
+  // Build filters object for real data
   const filters = {
     account_id: accountIdNumber,
     ...(status !== "all" && { status }),
-    ...(assigneeId !== "all" && assigneeId !== "unassigned" && { assignee_id: parseInt(assigneeId) }),
+    ...(assigneeId !== "all" && assigneeId !== "unassigned" && { assignee_id: assigneeId }),
     ...(inboxId !== "all" && { inbox_id: parseInt(inboxId) }),
   }
 
+  // Use real data hooks
   const {
     data: conversations = [],
     isLoading: conversationsLoading,
     error: conversationsError,
     refetch: refetchConversations
-  } = useChatwootConversations(filters)
+  } = useConversations(filters)
 
   const {
     data: agents = [],
     isLoading: agentsLoading
-  } = useChatwootAgents(accountIdNumber)
+  } = useUsers(accountIdNumber)
 
   const {
     data: inboxes = [],
     isLoading: inboxesLoading
-  } = useChatwootInboxes(accountIdNumber)
+  } = useInboxes(accountIdNumber)
 
   const handleRefresh = () => {
     refetchConversations()
     toast({
       title: "Atualizando análises",
-      description: "Buscando os dados mais recentes...",
+      description: "Buscando os dados mais recentes do banco de dados...",
     })
   }
 
+  // Filter conversations based on assignee
   const filteredConversations = conversations.filter(conversation => {
     if (assigneeId === "unassigned") {
       return !conversation.assignee
@@ -77,7 +79,7 @@ export default function Analytics() {
                     <span>Análises Avançadas</span>
                   </h1>
                   <p className="text-muted-foreground">
-                    Obtenha insights sobre o desempenho da sua equipe e métricas de conversas
+                    Dados em tempo real do banco de dados - {filteredConversations.length} conversas encontradas
                   </p>
                 </div>
               </div>
@@ -101,62 +103,54 @@ export default function Analytics() {
               isLoading={agentsLoading || inboxesLoading}
             />
 
-            {accountIdNumber > 0 ? (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="conversations" className="flex items-center space-x-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Estatísticas de Conversas</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="response-time" className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4" />
-                    <span>Tempo de Resposta</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="agent-performance" className="flex items-center space-x-2">
-                    <Users className="h-4 w-4" />
-                    <span>Desempenho dos Atendentes</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="conversations" className="space-y-6 mt-6">
-                  <ConversationAnalytics
-                    conversations={filteredConversations}
-                    isLoading={conversationsLoading}
-                    inboxes={inboxes}
-                  />
-                </TabsContent>
-
-                <TabsContent value="response-time" className="space-y-6 mt-6">
-                  <ResponseTimeAnalytics
-                    conversations={filteredConversations}
-                    isLoading={conversationsLoading}
-                    agents={agents}
-                  />
-                </TabsContent>
-
-                <TabsContent value="agent-performance" className="space-y-6 mt-6">
-                  <AgentPerformanceAnalytics
-                    conversations={filteredConversations}
-                    agents={agents}
-                    isLoading={conversationsLoading || agentsLoading}
-                  />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="text-center py-16">
-                <div className="max-w-md mx-auto">
-                  <div className="bg-blue-50 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-                    <TrendingUp className="h-12 w-12 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Configure sua conta para ver análises
-                  </h3>
-                  <p className="text-gray-500 mb-6">
-                    Para visualizar as análises avançadas, primeiro configure o ID da sua conta Chatwoot nos filtros acima.
-                  </p>
-                </div>
+            {conversationsError && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-800">
+                  Erro ao carregar dados: {conversationsError.message}
+                </p>
               </div>
             )}
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="conversations" className="flex items-center space-x-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Estatísticas de Conversas</span>
+                </TabsTrigger>
+                <TabsTrigger value="response-time" className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Tempo de Resposta</span>
+                </TabsTrigger>
+                <TabsTrigger value="agent-performance" className="flex items-center space-x-2">
+                  <Users className="h-4 w-4" />
+                  <span>Desempenho dos Atendentes</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="conversations" className="space-y-6 mt-6">
+                <ConversationAnalytics
+                  conversations={filteredConversations}
+                  isLoading={conversationsLoading}
+                  inboxes={inboxes}
+                />
+              </TabsContent>
+
+              <TabsContent value="response-time" className="space-y-6 mt-6">
+                <ResponseTimeAnalytics
+                  conversations={filteredConversations}
+                  isLoading={conversationsLoading}
+                  agents={agents}
+                />
+              </TabsContent>
+
+              <TabsContent value="agent-performance" className="space-y-6 mt-6">
+                <AgentPerformanceAnalytics
+                  conversations={filteredConversations}
+                  agents={agents}
+                  isLoading={conversationsLoading || agentsLoading}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </SidebarInset>
       </div>

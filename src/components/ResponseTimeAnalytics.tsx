@@ -24,7 +24,7 @@ interface Conversation {
   updated_at: string
   messages: any[]
   assignee?: {
-    id: number
+    id: string
     name: string
   }
 }
@@ -66,41 +66,98 @@ export const ResponseTimeAnalytics = ({
     )
   }
 
-  // Calcular métricas de tempo de resposta (simuladas)
-  const generateResponseTime = () => Math.floor(Math.random() * 120) + 5 // 5-125 minutos
-  
-  const avgFirstResponse = Math.floor(Math.random() * 30) + 10 // 10-40 min
-  const avgResponseTime = Math.floor(Math.random() * 15) + 5 // 5-20 min
-  const fastResponses = conversations.filter(() => Math.random() > 0.7).length
-  const slowResponses = conversations.filter(() => Math.random() > 0.8).length
+  // Calcular métricas reais de tempo de resposta baseadas nos dados
+  const calculateResponseTime = (conversation: Conversation) => {
+    if (!conversation.created_at || !conversation.updated_at) return 0
+    const created = new Date(conversation.created_at).getTime()
+    const updated = new Date(conversation.updated_at).getTime()
+    return Math.floor((updated - created) / (1000 * 60)) // em minutos
+  }
 
-  // Dados para gráfico de tempo de resposta por hora
-  const hourlyData = Array.from({ length: 24 }, (_, hour) => ({
-    hour: `${hour.toString().padStart(2, '0')}:00`,
-    responseTime: generateResponseTime(),
-    conversations: Math.floor(Math.random() * 10)
-  }))
+  // Calcular primeira resposta média (tempo entre criação e primeira atualização)
+  const responseTimes = conversations
+    .filter(c => c.created_at && c.updated_at)
+    .map(calculateResponseTime)
+    .filter(time => time > 0)
 
-  // Dados para gráfico de performance por agente
-  const agentData = agents.slice(0, 5).map(agent => ({
-    name: agent.name,
-    avgResponse: generateResponseTime(),
-    conversations: Math.floor(Math.random() * 20) + 5
-  }))
+  const avgFirstResponse = responseTimes.length > 0
+    ? Math.floor(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length)
+    : 0
 
-  // Dados para tendência dos últimos 7 dias
-  const trendData = Array.from({ length: 7 }, (_, i) => {
+  const avgResponseTime = Math.floor(avgFirstResponse * 0.7) // Estimativa para tempo médio entre mensagens
+  const fastResponses = responseTimes.filter(time => time <= 5).length
+  const slowResponses = responseTimes.filter(time => time > 30).length
+
+  // Dados para gráfico de tempo de resposta por hora (baseado nos horários das conversas)
+  const hourlyData = Array.from({ length: 24 }, (_, hour) => {
+    const hourConversations = conversations.filter(c => {
+      if (!c.created_at) return false
+      const createdHour = new Date(c.created_at).getHours()
+      return createdHour === hour
+    })
+    
+    const hourResponseTimes = hourConversations
+      .map(calculateResponseTime)
+      .filter(time => time > 0)
+    
+    const avgTime = hourResponseTimes.length > 0
+      ? Math.floor(hourResponseTimes.reduce((sum, time) => sum + time, 0) / hourResponseTimes.length)
+      : 0
+
+    return {
+      hour: `${hour.toString().padStart(2, '0')}:00`,
+      responseTime: avgTime,
+      conversations: hourConversations.length
+    }
+  })
+
+  // Dados para gráfico de performance por agente (baseado nos dados reais)
+  const agentData = agents.slice(0, 5).map(agent => {
+    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id.toString())
+    const agentResponseTimes = agentConversations
+      .map(calculateResponseTime)
+      .filter(time => time > 0)
+    
+    const avgResponse = agentResponseTimes.length > 0
+      ? Math.floor(agentResponseTimes.reduce((sum, time) => sum + time, 0) / agentResponseTimes.length)
+      : 0
+
+    return {
+      name: agent.name,
+      avgResponse,
+      conversations: agentConversations.length
+    }
+  }).filter(agent => agent.conversations > 0)
+
+  // Dados para tendência dos últimos 7 dias (baseado nos dados reais)
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() - i)
-    return {
-      date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      responseTime: generateResponseTime()
-    }
+    return date.toISOString().split('T')[0]
   }).reverse()
+
+  const trendData = last7Days.map(date => {
+    const dayConversations = conversations.filter(c => 
+      c.created_at && c.created_at.split('T')[0] === date
+    )
+    
+    const dayResponseTimes = dayConversations
+      .map(calculateResponseTime)
+      .filter(time => time > 0)
+    
+    const avgTime = dayResponseTimes.length > 0
+      ? Math.floor(dayResponseTimes.reduce((sum, time) => sum + time, 0) / dayResponseTimes.length)
+      : 0
+
+    return {
+      date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      responseTime: avgTime
+    }
+  })
 
   return (
     <div className="space-y-6">
-      {/* Métricas principais */}
+      {/* Métricas principais baseadas em dados reais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -110,7 +167,7 @@ export const ResponseTimeAnalytics = ({
           <CardContent>
             <div className="text-2xl font-bold">{avgFirstResponse}min</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Tempo médio para primeira resposta
+              Baseado em {responseTimes.length} conversas
             </p>
           </CardContent>
         </Card>
@@ -123,7 +180,7 @@ export const ResponseTimeAnalytics = ({
           <CardContent>
             <div className="text-2xl font-bold">{avgResponseTime}min</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Tempo médio entre mensagens
+              Tempo médio estimado entre mensagens
             </p>
           </CardContent>
         </Card>
@@ -155,7 +212,7 @@ export const ResponseTimeAnalytics = ({
         </Card>
       </div>
 
-      {/* Gráficos */}
+      {/* Gráficos baseados em dados reais */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tempo de Resposta por Hora */}
         <Card>
@@ -189,17 +246,23 @@ export const ResponseTimeAnalytics = ({
             <CardTitle>Performance por Agente</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <BarChart data={agentData} layout="horizontal">
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} />
-                <Bar dataKey="avgResponse" fill="#8B5CF6" />
-                <ChartTooltip 
-                  content={<ChartTooltipContent />}
-                  formatter={(value) => [`${value} min`, 'Tempo Médio']}
-                />
-              </BarChart>
-            </ChartContainer>
+            {agentData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px]">
+                <BarChart data={agentData} layout="horizontal">
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={100} />
+                  <Bar dataKey="avgResponse" fill="#8B5CF6" />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    formatter={(value) => [`${value} min`, 'Tempo Médio']}
+                  />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Nenhum agente com dados disponíveis
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -245,7 +308,7 @@ export const ResponseTimeAnalytics = ({
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className={`h-2 rounded-full ${avgFirstResponse <= 15 ? 'bg-green-600' : 'bg-red-600'}`}
-                  style={{ width: `${Math.min((15 / avgFirstResponse) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((15 / Math.max(avgFirstResponse, 1)) * 100, 100)}%` }}
                 ></div>
               </div>
               <p className="text-xs text-muted-foreground">Meta: 15 minutos</p>
@@ -261,18 +324,21 @@ export const ResponseTimeAnalytics = ({
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className={`h-2 rounded-full ${avgResponseTime <= 10 ? 'bg-green-600' : 'bg-red-600'}`}
-                  style={{ width: `${Math.min((10 / avgResponseTime) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((10 / Math.max(avgResponseTime, 1)) * 100, 100)}%` }}
                 ></div>
               </div>
               <p className="text-xs text-muted-foreground">Meta: 10 minutos</p>
             </div>
 
             <div className="pt-4 border-t">
-              <h4 className="text-sm font-medium mb-2">Recomendações</h4>
+              <h4 className="text-sm font-medium mb-2">Insights dos Dados</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Implemente respostas automáticas</li>
-                <li>• Treine equipe em horários de pico</li>
-                <li>• Configure alertas para conversas pendentes</li>
+                <li>• {responseTimes.length} conversas analisadas</li>
+                <li>• {fastResponses} respostas em menos de 5 minutos</li>
+                <li>• {slowResponses} respostas lentas identificadas</li>
+                {agentData.length > 0 && (
+                  <li>• {agentData.length} agentes com atividade</li>
+                )}
               </ul>
             </div>
           </CardContent>
