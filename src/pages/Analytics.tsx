@@ -6,11 +6,26 @@ import { ChatwootFilters } from "@/components/ChatwootFilters"
 import { ConversationAnalytics } from "@/components/ConversationAnalytics"
 import { ResponseTimeAnalytics } from "@/components/ResponseTimeAnalytics"
 import { AgentPerformanceAnalytics } from "@/components/AgentPerformanceAnalytics"
-import { useConversations, useUsers, useInboxes } from "@/hooks/useSupabaseData"
+import { useConversations, useUsers, useInboxes, User } from "@/hooks/useSupabaseData"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, BarChart3, Clock, Users, TrendingUp } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+
+// Type adapter to convert User to Agent format expected by ChatwootFilters
+interface Agent {
+  id: number
+  name: string
+  email: string
+}
+
+const convertUsersToAgents = (users: User[]): Agent[] => {
+  return users.map((user, index) => ({
+    id: index + 1, // Use index as number ID for compatibility
+    name: user.name || 'Unknown Agent',
+    email: user.email || 'no-email@example.com'
+  }))
+}
 
 export default function Analytics() {
   const [status, setStatus] = useState("all")
@@ -39,8 +54,8 @@ export default function Analytics() {
   } = useConversations(filters)
 
   const {
-    data: agents = [],
-    isLoading: agentsLoading
+    data: users = [],
+    isLoading: usersLoading
   } = useUsers(accountIdNumber)
 
   const {
@@ -63,6 +78,9 @@ export default function Analytics() {
     }
     return true
   })
+
+  // Convert users to agents format for ChatwootFilters
+  const agents = convertUsersToAgents(users)
 
   return (
     <SidebarProvider>
@@ -100,7 +118,7 @@ export default function Analytics() {
               onAccountIdChange={setAccountId}
               agents={agents}
               inboxes={inboxes}
-              isLoading={agentsLoading || inboxesLoading}
+              isLoading={usersLoading || inboxesLoading}
             />
 
             {conversationsError && (
@@ -139,15 +157,15 @@ export default function Analytics() {
                 <ResponseTimeAnalytics
                   conversations={filteredConversations}
                   isLoading={conversationsLoading}
-                  agents={agents}
+                  agents={users}
                 />
               </TabsContent>
 
               <TabsContent value="agent-performance" className="space-y-6 mt-6">
                 <AgentPerformanceAnalytics
                   conversations={filteredConversations}
-                  agents={agents}
-                  isLoading={conversationsLoading || agentsLoading}
+                  agents={users}
+                  isLoading={conversationsLoading || usersLoading}
                 />
               </TabsContent>
             </Tabs>
