@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -27,27 +26,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
-
-interface Conversation {
-  id: number
-  status: string
-  created_at: string
-  updated_at: string
-  inbox?: {
-    id: number
-    name: string
-    channel_type: string
-  }
-  messages: any[]
-  assignee?: {
-    id: string
-    name: string
-  }
-  contact?: {
-    id: number
-    name: string
-  }
-}
+import { Conversation } from "@/types"
 
 interface ConversationAnalyticsProps {
   conversations: Conversation[]

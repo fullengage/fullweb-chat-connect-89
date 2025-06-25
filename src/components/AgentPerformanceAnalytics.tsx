@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -27,29 +26,12 @@ import {
   TrendingUp,
   Award
 } from "lucide-react"
-
-interface Conversation {
-  id: number
-  status: string
-  created_at: string
-  updated_at: string
-  assignee?: {
-    id: string
-    name: string
-  }
-  messages: any[]
-}
-
-interface Agent {
-  id: string
-  name: string
-  email: string
-  avatar_url?: string
-}
+import { Conversation } from "@/types"
+import { User } from "@/hooks/useSupabaseData"
 
 interface AgentPerformanceAnalyticsProps {
   conversations: Conversation[]
-  agents: Agent[]
+  agents: User[]
   isLoading: boolean
 }
 
@@ -96,7 +78,7 @@ export const AgentPerformanceAnalytics = ({
   }
 
   const agentMetrics = agents.map(agent => {
-    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id.toString())
+    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id)
     const resolvedConversations = agentConversations.filter(c => c.status === 'resolved')
     
     const responseTimes = agentConversations
@@ -131,7 +113,7 @@ export const AgentPerformanceAnalytics = ({
 
   // Dados para gráfico de conversas por agente (dados reais)
   const conversationData = agentMetrics.slice(0, 6).map(agent => ({
-    name: agent.name.split(' ')[0], // Primeiro nome apenas
+    name: agent.name?.split(' ')[0] || 'Agente', // Primeiro nome apenas
     conversations: agent.totalConversations,
     resolved: agent.resolvedConversations
   })).filter(agent => agent.conversations > 0)
@@ -139,7 +121,7 @@ export const AgentPerformanceAnalytics = ({
   // Dados para radar chart (top 3 agentes com atividade)
   const activeAgents = agentMetrics.filter(agent => agent.totalConversations > 0).slice(0, 3)
   const radarData = activeAgents.length > 0 ? activeAgents.map(agent => ({
-    agent: agent.name.split(' ')[0],
+    agent: agent.name?.split(' ')[0] || 'Agente',
     conversas: Math.min(agent.totalConversations * 10, 100), // Escala para 0-100
     resolucao: agent.resolutionRate,
     satisfacao: agent.satisfactionScore * 20, // Escala 4-5 para 80-100
@@ -229,12 +211,12 @@ export const AgentPerformanceAnalytics = ({
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={agent.avatar_url} />
                     <AvatarFallback>
-                      {agent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      {agent.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'AG'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-medium">{agent.name}</h4>
-                    <p className="text-sm text-muted-foreground">{agent.email}</p>
+                    <h4 className="font-medium">{agent.name || 'Agente'}</h4>
+                    <p className="text-sm text-muted-foreground">{agent.email || 'email@exemplo.com'}</p>
                   </div>
                 </div>
                 

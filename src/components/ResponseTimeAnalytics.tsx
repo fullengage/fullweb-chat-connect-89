@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -16,22 +15,12 @@ import {
   ResponsiveContainer 
 } from "recharts"
 import { Clock, Timer, Zap, AlertCircle } from "lucide-react"
-
-interface Conversation {
-  id: number
-  status: string
-  created_at: string
-  updated_at: string
-  messages: any[]
-  assignee?: {
-    id: string
-    name: string
-  }
-}
+import { Conversation } from "@/types"
+import { User } from "@/hooks/useSupabaseData"
 
 interface ResponseTimeAnalyticsProps {
   conversations: Conversation[]
-  agents: any[]
+  agents: User[]
   isLoading: boolean
 }
 
@@ -113,7 +102,7 @@ export const ResponseTimeAnalytics = ({
 
   // Dados para gráfico de performance por agente (baseado nos dados reais)
   const agentData = agents.slice(0, 5).map(agent => {
-    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id.toString())
+    const agentConversations = conversations.filter(c => c.assignee?.id === agent.id)
     const agentResponseTimes = agentConversations
       .map(calculateResponseTime)
       .filter(time => time > 0)
@@ -192,7 +181,7 @@ export const ResponseTimeAnalytics = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fastResponses}</div>
-            <Badge variant="outline" className="mt-1 text-green-600 border-green-600">
+            <Badge variant="outline" className="mt-green-600 border-green-600">
               &lt; 5 minutos
             </Badge>
           </CardContent>
