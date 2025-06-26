@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp, UsersRound } from "lucide-react";
+import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp, UsersRound, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
@@ -24,6 +23,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: BarChart3,
+  },
+  {
+    title: "Chat",
+    url: "/chat",
+    icon: MessageCircle,
   },
   {
     title: "Conversas",
