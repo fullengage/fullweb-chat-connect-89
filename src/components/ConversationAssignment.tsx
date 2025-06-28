@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { 
@@ -286,7 +285,6 @@ export const ConversationAssignment = ({
             >
               {isAssigning ? "Atribuindo..." : "Atribuir"}
             </Button>
-          </Button>
           </div>
         </div>
       </DialogContent>
