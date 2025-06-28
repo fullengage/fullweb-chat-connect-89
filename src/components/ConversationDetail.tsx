@@ -28,11 +28,14 @@ import {
   UserCheck,
   X,
   Phone,
-  Mail
+  Mail,
+  Save
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
 import { Conversation } from "@/types"
+import { useToast } from "@/hooks/use-toast"
+import { useUpdateConversationStatus, useAssignConversation } from "@/hooks/useSupabaseData"
 
 interface Agent {
   id: number
@@ -57,6 +60,11 @@ export const ConversationDetail = ({
   const [newMessage, setNewMessage] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("")
   const [selectedAssignee, setSelectedAssignee] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
+
+  const updateStatus = useUpdateConversationStatus()
+  const assignConversation = useAssignConversation()
 
   if (!conversation) return null
 
@@ -96,14 +104,78 @@ export const ConversationDetail = ({
 
   const handleStatusChange = (newStatus: string) => {
     setSelectedStatus(newStatus)
-    // Aqui seria implementada a lógica para alterar status
-    console.log('Alterando status para:', newStatus)
   }
 
   const handleAssigneeChange = (assigneeId: string) => {
     setSelectedAssignee(assigneeId)
-    // Aqui seria implementada a lógica para alterar responsável
-    console.log('Alterando responsável para:', assigneeId)
+  }
+
+  const handleSaveChanges = async () => {
+    if (!conversation) return
+
+    setIsSaving(true)
+    
+    try {
+      const promises = []
+
+      // Atualizar status se foi alterado
+      if (selectedStatus && selectedStatus !== conversation.status) {
+        promises.push(
+          updateStatus.mutateAsync({ 
+            conversationId: conversation.id, 
+            status: selectedStatus 
+          })
+        )
+      }
+
+      // Atualizar responsável se foi alterado
+      if (selectedAssignee !== (conversation.assignee?.id?.toString() || "")) {
+        const assigneeId = selectedAssignee === "" ? null : selectedAssignee
+        promises.push(
+          assignConversation.mutateAsync({ 
+            conversationId: conversation.id, 
+            assigneeId 
+          })
+        )
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises)
+        
+        toast({
+          title: "Alterações salvas",
+          description: "As alterações da conversa foram salvas com sucesso.",
+        })
+
+        // Reset the selected values after saving
+        setSelectedStatus("")
+        setSelectedAssignee("")
+      } else {
+        toast({
+          title: "Nenhuma alteração",
+          description: "Não há alterações para salvar.",
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error)
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const hasChanges = () => {
+    if (!conversation) return false
+    
+    const statusChanged = selectedStatus && selectedStatus !== conversation.status
+    const assigneeChanged = selectedAssignee !== (conversation.assignee?.id?.toString() || "")
+    
+    return statusChanged || assigneeChanged
   }
 
   return (
@@ -184,7 +256,7 @@ export const ConversationDetail = ({
 
               <div>
                 <label className="text-sm font-medium">Responsável</label>
-                <Select value={selectedAssignee || conversation.assignee?.id || ""} onValueChange={handleAssigneeChange}>
+                <Select value={selectedAssignee || conversation.assignee?.id?.toString() || ""} onValueChange={handleAssigneeChange}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Selecionar responsável" />
                   </SelectTrigger>
@@ -205,6 +277,18 @@ export const ConversationDetail = ({
                   <span>Atribuído a {conversation.assignee.name}</span>
                 </div>
               )}
+
+              {/* Botão Salvar */}
+              <div className="pt-2">
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={!hasChanges() || isSaving}
+                  className="w-full"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? "Salvando..." : "Salvar Alterações"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
