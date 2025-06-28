@@ -6,12 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { 
   Send, 
-  MoreHorizontal, 
-  Phone, 
-  Video, 
   Info,
   Lock,
-  UserPlus,
   AlertTriangle
 } from "lucide-react"
 import { Conversation } from "@/types"
@@ -122,11 +118,11 @@ export const ChatArea = ({
 
   return (
     <div className="flex-1 flex flex-col bg-white">
-      {/* Header */}
-      <div className="p-4 border-b bg-white">
+      {/* Simplified Header */}
+      <div className="p-3 border-b bg-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={conversation.contact?.avatar_url} />
               <AvatarFallback>
                 {conversation.contact?.name?.charAt(0)?.toUpperCase() || 'C'}
@@ -134,13 +130,10 @@ export const ChatArea = ({
             </Avatar>
             
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-medium text-gray-900 text-sm">
                 {conversation.contact?.name || 'Contato Desconhecido'}
               </h2>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {conversation.contact?.email || conversation.contact?.phone || 'Sem contato'}
-                </span>
                 <Badge className={`text-xs ${getStatusColor(conversation.status)}`}>
                   {getStatusText(conversation.status)}
                 </Badge>
@@ -148,61 +141,25 @@ export const ChatArea = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              <Phone className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Video className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onToggleDetails}
-            >
-              <Info className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Assignee Info */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Atribuído para:</span>
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={conversation.assignee?.avatar_url} />
-                <AvatarFallback className="text-xs">
-                  {conversation.assignee?.name?.charAt(0)?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium text-gray-700">
-                {conversation.assignee?.name}
-              </span>
-            </div>
-          </div>
-          
-          <ConversationAssignment
-            conversationId={conversation.id}
-            currentAssignee={conversation.assignee}
-            agents={agents}
-            onAssignmentChange={onRefreshConversations}
-          />
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={onToggleDetails}
+          >
+            <Info className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Area - Now More Prominent */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {/* Mensagem de sistema indicando que a conversa foi desbloqueada */}
         <div className="flex justify-center">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-w-md">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-sm text-green-800">
-                Conversa desbloqueada - Agente {conversation.assignee?.name} atribuído
+                Conversa ativa - Agente {conversation.assignee?.name} responsável
               </span>
             </div>
             <div className="text-xs text-green-600 mt-1">
@@ -211,15 +168,16 @@ export const ChatArea = ({
           </div>
         </div>
 
-        {/* Placeholder para mensagens futuras */}
-        <div className="text-center text-gray-500 py-8">
-          <p>Nenhuma mensagem ainda. Comece a conversa!</p>
+        {/* Área para mensagens futuras */}
+        <div className="text-center text-gray-500 py-12">
+          <p className="text-lg">💬 Pronto para conversar!</p>
+          <p className="text-sm mt-2">Digite sua mensagem abaixo</p>
         </div>
       </div>
 
-      {/* Message Input */}
+      {/* Message Input - More Prominent */}
       <div className="p-4 border-t bg-white">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <Input
             placeholder="Digite sua mensagem..."
             value={message}
@@ -233,7 +191,7 @@ export const ChatArea = ({
             }}
             className="flex-1"
           />
-          <Button size="sm">
+          <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
             <Send className="h-4 w-4" />
           </Button>
         </div>

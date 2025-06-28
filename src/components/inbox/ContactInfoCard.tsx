@@ -13,46 +13,46 @@ interface ContactInfoCardProps {
 export const ContactInfoCard = ({ conversation }: ContactInfoCardProps) => {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center space-x-2">
-          <User className="h-4 w-4" />
-          <span>Informações do Contato</span>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs flex items-center space-x-2">
+          <User className="h-3 w-3" />
+          <span>Contato</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-12 w-12">
+      <CardContent className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Avatar className="h-8 w-8">
             <AvatarImage src={conversation.contact?.avatar_url} />
-            <AvatarFallback className="bg-purple-100 text-purple-700">
+            <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
               {conversation.contact?.name?.charAt(0)?.toUpperCase() || 'C'}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="font-medium text-gray-900">
+            <h4 className="font-medium text-gray-900 text-sm">
               {conversation.contact?.name || 'Contato Desconhecido'}
             </h4>
-            <p className="text-sm text-gray-500">#{conversation.id}</p>
+            <p className="text-xs text-gray-500">#{conversation.id}</p>
           </div>
         </div>
 
         {conversation.contact?.phone && (
-          <div className="flex items-center text-sm text-gray-600">
-            <Phone className="h-4 w-4 mr-2" />
+          <div className="flex items-center text-xs text-gray-600">
+            <Phone className="h-3 w-3 mr-1" />
             <span>{conversation.contact.phone}</span>
           </div>
         )}
 
         {conversation.contact?.email && (
-          <div className="flex items-center text-sm text-gray-600">
-            <Mail className="h-4 w-4 mr-2" />
+          <div className="flex items-center text-xs text-gray-600">
+            <Mail className="h-3 w-3 mr-1" />
             <span>{conversation.contact.email}</span>
           </div>
         )}
 
-        <div className="flex items-center text-sm text-gray-600">
-          <Calendar className="h-4 w-4 mr-2" />
+        <div className="flex items-center text-xs text-gray-600">
+          <Calendar className="h-3 w-3 mr-1" />
           <span>
-            Criado {format(new Date(conversation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            {format(new Date(conversation.created_at), "dd/MM/yyyy", { locale: ptBR })}
           </span>
         </div>
       </CardContent>
