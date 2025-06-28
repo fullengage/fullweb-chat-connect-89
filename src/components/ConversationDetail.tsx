@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +36,7 @@ import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
 import { Conversation } from "@/types"
 import { useToast } from "@/hooks/use-toast"
-import { useUpdateConversationStatus, useAssignConversation } from "@/hooks/useSupabaseData"
+import { useUpdateConversationStatus, useAssignConversation } from "@/hooks/useMutations"
 
 interface Agent {
   id: number
@@ -67,6 +68,16 @@ export const ConversationDetail = ({
   const assignConversation = useAssignConversation()
 
   if (!conversation) return null
+
+  // Filter valid agents to prevent empty values in SelectItem
+  const validAgents = agents?.filter(agent => 
+    agent && 
+    agent.id && 
+    typeof agent.id === 'number' && 
+    agent.name && 
+    typeof agent.name === 'string' && 
+    agent.name.trim() !== ''
+  ) || []
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -129,8 +140,10 @@ export const ConversationDetail = ({
       }
 
       // Atualizar responsável se foi alterado
-      if (selectedAssignee !== (conversation.assignee?.id?.toString() || "")) {
-        const assigneeId = selectedAssignee === "" ? null : selectedAssignee
+      const currentAssigneeId = conversation.assignee?.id?.toString() || ""
+      if (selectedAssignee !== currentAssigneeId) {
+        // Convert assigneeId to string if not empty, otherwise null
+        const assigneeId = selectedAssignee && selectedAssignee !== "" ? selectedAssignee : null
         promises.push(
           assignConversation.mutateAsync({ 
             conversationId: conversation.id, 
@@ -262,7 +275,7 @@ export const ConversationDetail = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Não atribuído</SelectItem>
-                    {agents.map((agent) => (
+                    {validAgents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id.toString()}>
                         {agent.name}
                       </SelectItem>
