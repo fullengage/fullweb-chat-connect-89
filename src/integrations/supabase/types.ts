@@ -670,6 +670,20 @@ export type Database = {
         Args: { p_account_id: number }
         Returns: string
       }
+      get_valid_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          account_id: number
+          role: string
+          name: string
+          email: string
+          avatar_url: string
+          auth_user_id: string
+          created_at: string
+          updated_at: string
+        }[]
+      }
       is_account_admin: {
         Args: { user_id: string; target_account_id: number }
         Returns: boolean

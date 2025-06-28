@@ -270,35 +270,8 @@ export const useUsers = (account_id: number) => {
         throw new Error('User not authenticated')
       }
 
-      // Buscar dados do usuário atual
-      const { data: currentUserData, error: currentUserError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (currentUserError || !currentUserData) {
-        console.error('Current user data error:', currentUserError)
-        throw new Error('Current user data not found')
-      }
-
-      let query = supabase
-        .from('users')
-        .select('*')
-        .order('name')
-
-      // Aplicar filtros baseados no papel do usuário
-      if (currentUserData.role === 'superadmin') {
-        // Superadmin pode ver usuários de qualquer conta se especificada
-        if (account_id) {
-          query = query.eq('account_id', account_id)
-        }
-      } else {
-        // Admin e Agent só podem ver usuários da sua própria conta
-        query = query.eq('account_id', currentUserData.account_id)
-      }
-
-      const { data, error } = await query
+      // ✅ Usar função segura do banco de dados
+      const { data, error } = await supabase.rpc('get_valid_users')
 
       if (error) {
         console.error('Database error:', error)
@@ -310,8 +283,33 @@ export const useUsers = (account_id: number) => {
         throw error
       }
 
-      console.log('Users fetched successfully:', data?.length)
-      return data as User[]
+      // Buscar dados do usuário atual para aplicar filtros baseados no papel
+      const { data: currentUserData, error: currentUserError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .single()
+
+      if (currentUserError || !currentUserData) {
+        console.error('Current user data error:', currentUserError)
+        throw new Error('Current user data not found')
+      }
+
+      // Aplicar filtros baseados no papel do usuário
+      let filteredUsers = data || []
+      
+      if (currentUserData.role === 'superadmin') {
+        // Superadmin pode ver usuários de qualquer conta se especificada
+        if (account_id) {
+          filteredUsers = filteredUsers.filter(user => user.account_id === account_id)
+        }
+      } else {
+        // Admin e Agent só podem ver usuários da sua própria conta
+        filteredUsers = filteredUsers.filter(user => user.account_id === currentUserData.account_id)
+      }
+
+      console.log('Valid users fetched successfully:', filteredUsers.length)
+      return filteredUsers as User[]
     },
     enabled: !!authUser,
     staleTime: 5 * 60 * 1000,
