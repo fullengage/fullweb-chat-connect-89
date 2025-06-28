@@ -1,3 +1,4 @@
+
 export interface Agent {
   id: string
   name: string
@@ -14,6 +15,7 @@ export interface ConversationForStats {
     email?: string
     phone?: string
     avatar_url?: string
+    additional_attributes?: any
   }
   assignee?: {
     id: string // Changed from number to string to match Supabase UUIDs
@@ -46,12 +48,14 @@ export interface Conversation {
   unread_count?: number
   additional_attributes?: any
   custom_attributes?: any
+  subject?: string
   contact?: {
     id: number
     name: string
     email?: string
     phone?: string
     avatar_url?: string
+    additional_attributes?: any
   }
   assignee?: {
     id: string // Fixed: Changed from number to string to match Supabase UUIDs
@@ -74,7 +78,6 @@ export interface User {
   display_name?: string
   avatar_url?: string
   role: string
-  confirmed: boolean
   created_at: string
   updated_at: string
 }

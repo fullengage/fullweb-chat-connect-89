@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
-import { useConversations, useUsers } from "@/hooks/useSupabaseData"
+import { useConversations } from "@/hooks/useSupabaseData"
+import { useUsers, User } from "@/hooks/useUsers"
 import { Conversation, ConversationForStats } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
