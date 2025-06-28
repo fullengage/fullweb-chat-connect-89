@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,12 +29,15 @@ import {
 } from 'lucide-react';
 import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '@/hooks/useAccounts';
 import { NewAccountDialog } from '@/components/NewAccountDialog';
+import { CreateAdminUserDialog } from '@/components/CreateAdminUserDialog';
 
 const SuperAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
+  const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<{id: number, name: string} | null>(null);
 
   // Hooks do Supabase
   const { data: accounts = [], isLoading: loading, error } = useAccounts();
@@ -60,7 +62,7 @@ const SuperAdmin = () => {
 
   const handleCreateCompany = async (accountData: any) => {
     try {
-      await createAccountMutation.mutateAsync({
+      const newAccount = await createAccountMutation.mutateAsync({
         name: accountData.name,
         email: accountData.email,
         phone: accountData.phone,
@@ -72,10 +74,20 @@ const SuperAdmin = () => {
         plan_id: accountData.plan_id,
         is_active: true
       });
+      
       setIsCreateCompanyOpen(false);
+      
+      // Após criar a empresa, perguntar se quer criar um admin
+      setSelectedAccount({ id: newAccount.id, name: newAccount.name });
+      setIsCreateAdminOpen(true);
     } catch (error) {
       console.error('Error creating company:', error);
     }
+  };
+
+  const handleCreateAdminUser = (accountId: number, accountName: string) => {
+    setSelectedAccount({ id: accountId, name: accountName });
+    setIsCreateAdminOpen(true);
   };
 
   const toggleCompanyStatus = async (accountId: number, currentStatus: boolean) => {
@@ -337,6 +349,15 @@ const SuperAdmin = () => {
                           <Button 
                             size="sm" 
                             variant="ghost" 
+                            title="Criar Admin"
+                            onClick={() => handleCreateAdminUser(account.id, account.name)}
+                            className="text-blue-600"
+                          >
+                            <User className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
                             title={account.is_active ? 'Bloquear' : 'Desbloquear'}
                             onClick={() => toggleCompanyStatus(account.id, account.is_active)}
                             className={account.is_active ? 'text-red-600' : 'text-green-600'}
@@ -369,6 +390,16 @@ const SuperAdmin = () => {
         open={isCreateCompanyOpen}
         onOpenChange={setIsCreateCompanyOpen}
         onSave={handleCreateCompany}
+      />
+      
+      <CreateAdminUserDialog
+        open={isCreateAdminOpen}
+        onOpenChange={setIsCreateAdminOpen}
+        accountId={selectedAccount?.id || 0}
+        accountName={selectedAccount?.name || ''}
+        onSuccess={() => {
+          // Optionally refresh data or show success message
+        }}
       />
     </Card>
   );
