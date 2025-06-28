@@ -46,31 +46,48 @@ export const ConversationAssignment = ({
   console.log('ConversationAssignment props:', { conversationId, currentAssignee, agents: agents?.length })
   console.log('Raw agents data:', agents)
   
-  // More rigorous filtering for valid agents
+  // Filtração mais rigorosa para agentes válidos
   const validAgents = agents?.filter(agent => {
-    const isValid = agent && 
-                   agent.id && 
-                   typeof agent.id === 'string' && 
-                   agent.id.trim() !== '' && 
-                   agent.name && 
-                   typeof agent.name === 'string' && 
-                   agent.name.trim() !== ''
+    // Verificar se o agente é válido e tem todos os campos obrigatórios
+    const hasValidId = agent && 
+                      agent.id && 
+                      typeof agent.id === 'string' && 
+                      agent.id.trim() !== '' &&
+                      agent.id.length > 10 // UUID deve ter pelo menos 10 caracteres
     
-    console.log('Agent validation:', { 
-      agent: { id: agent?.id, name: agent?.name }, 
-      isValid 
-    })
+    const hasValidName = agent && 
+                        agent.name && 
+                        typeof agent.name === 'string' && 
+                        agent.name.trim() !== ''
+    
+    const hasValidEmail = agent && 
+                         agent.email && 
+                         typeof agent.email === 'string' && 
+                         agent.email.trim() !== ''
+    
+    const isValid = hasValidId && hasValidName && hasValidEmail
+    
+    if (!isValid) {
+      console.warn('Invalid agent found:', { 
+        id: agent?.id, 
+        name: agent?.name, 
+        email: agent?.email,
+        hasValidId,
+        hasValidName,
+        hasValidEmail
+      })
+    }
     
     return isValid
   }) || []
   
-  console.log('Valid agents after filtering:', validAgents)
+  console.log('Valid agents after filtering:', validAgents.length, validAgents)
 
   const handleAssign = async () => {
-    if (!selectedAgentId) {
+    if (!selectedAgentId || selectedAgentId.trim() === '') {
       toast({
         title: "Erro",
-        description: "Por favor, selecione um agente.",
+        description: "Por favor, selecione um agente válido.",
         variant: "destructive",
       })
       return
@@ -144,6 +161,7 @@ export const ConversationAssignment = ({
 
   // Verificar se há agentes válidos disponíveis
   if (!validAgents || validAgents.length === 0) {
+    console.log('No valid agents available')
     return (
       <div className="flex items-center space-x-2">
         <User className="h-3 w-3 text-gray-400" />
@@ -205,7 +223,7 @@ export const ConversationAssignment = ({
               </Button>
               <Button 
                 onClick={handleAssign}
-                disabled={!selectedAgentId || isAssigning}
+                disabled={!selectedAgentId || selectedAgentId.trim() === '' || isAssigning}
               >
                 {isAssigning ? "Atribuindo..." : "Reatribuir"}
               </Button>
@@ -264,10 +282,11 @@ export const ConversationAssignment = ({
             </Button>
             <Button 
               onClick={handleAssign}
-              disabled={!selectedAgentId || isAssigning}
+              disabled={!selectedAgentId || selectedAgentId.trim() === '' || isAssigning}
             >
               {isAssigning ? "Atribuindo..." : "Atribuir"}
             </Button>
+          </Button>
           </div>
         </div>
       </DialogContent>
