@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   User, 
   Mail, 
@@ -35,14 +36,16 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
 
   if (!agent) return null;
 
+  const teams = ["Vendas", "Suporte", "Técnico", "Financeiro"];
+
   const handleEdit = () => {
     setEditData({ ...agent });
     setEditMode(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editData) {
-      onSave(editData);
+      await onSave(editData);
       setEditMode(false);
       setEditData(null);
     }
@@ -51,6 +54,17 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
   const handleCancel = () => {
     setEditMode(false);
     setEditData(null);
+  };
+
+  const handleTeamChange = (team: string, checked: boolean) => {
+    if (!editData) return;
+    
+    setEditData({
+      ...editData,
+      teams: checked 
+        ? [...(editData.teams || []), team]
+        : (editData.teams || []).filter(t => t !== team)
+    });
   };
 
   const getRoleLabel = (role: string) => {
@@ -69,6 +83,16 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
       case "offline": return "bg-red-100 text-red-800";
       case "away": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "online": return "Online";
+      case "busy": return "Ocupado";
+      case "offline": return "Offline";
+      case "away": return "Ausente";
+      default: return status;
     }
   };
 
@@ -105,7 +129,7 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
               </div>
             </DialogTitle>
             <Badge className={getStatusColor(agent.status)}>
-              {agent.status}
+              {getStatusLabel(agent.status)}
             </Badge>
           </div>
         </DialogHeader>
@@ -274,6 +298,22 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
                       />
                     </div>
                     <div>
+                      <Label>Função</Label>
+                      <Select 
+                        value={editData.role} 
+                        onValueChange={(value: 'agent' | 'supervisor' | 'administrator') => setEditData({ ...editData, role: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="agent">Agente</SelectItem>
+                          <SelectItem value="supervisor">Supervisor</SelectItem>
+                          <SelectItem value="administrator">Administrador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <Label>Status</Label>
                       <Select 
                         value={editData.status} 
@@ -289,6 +329,21 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
                           <SelectItem value="away">Ausente</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Label>Equipes</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {teams.map((team) => (
+                          <div key={team} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`edit-${team}`}
+                              checked={(editData.teams || []).includes(team)}
+                              onCheckedChange={(checked) => handleTeamChange(team, checked as boolean)}
+                            />
+                            <Label htmlFor={`edit-${team}`} className="text-sm">{team}</Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex space-x-2">
                       <Button onClick={handleSave}>Salvar</Button>
@@ -312,11 +367,25 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
                       </div>
                     )}
                     <div>
+                      <Label>Função</Label>
+                      <p className="font-medium">{getRoleLabel(agent.role)}</p>
+                    </div>
+                    <div>
                       <Label>Status</Label>
                       <Badge className={getStatusColor(agent.status)}>
-                        {agent.status}
+                        {getStatusLabel(agent.status)}
                       </Badge>
                     </div>
+                    {agent.teams && agent.teams.length > 0 && (
+                      <div>
+                        <Label>Equipes</Label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {agent.teams.map((team) => (
+                            <Badge key={team} variant="outline">{team}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
