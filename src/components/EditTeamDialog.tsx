@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,14 +16,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/contexts/AuthContext";
+import { Team } from "@/hooks/useTeams";
 
-interface CreateTeamDialogProps {
+interface EditTeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  team: Team | null;
   onSave: (teamData: any) => void;
 }
 
-export function CreateTeamDialog({ open, onOpenChange, onSave }: CreateTeamDialogProps) {
+export function EditTeamDialog({ open, onOpenChange, team, onSave }: EditTeamDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     department: "",
@@ -38,22 +40,32 @@ export function CreateTeamDialog({ open, onOpenChange, onSave }: CreateTeamDialo
   // Buscar usuários da conta atual
   const { data: users = [] } = useUsers(1); // Usar account_id do contexto
 
+  useEffect(() => {
+    if (team) {
+      setFormData({
+        name: team.name,
+        department: team.department,
+        description: team.description || "",
+        leader_id: team.leader_id || "",
+        member_ids: team.member_ids || []
+      });
+    }
+  }, [team]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!team) return;
+
     setIsLoading(true);
 
     try {
-      await onSave(formData);
-      setFormData({
-        name: "",
-        department: "",
-        description: "",
-        leader_id: "",
-        member_ids: []
+      await onSave({
+        id: team.id,
+        ...formData
       });
       onOpenChange(false);
     } catch (error) {
-      console.error('Error creating team:', error);
+      console.error('Error updating team:', error);
     } finally {
       setIsLoading(false);
     }
@@ -68,11 +80,13 @@ export function CreateTeamDialog({ open, onOpenChange, onSave }: CreateTeamDialo
     }));
   };
 
+  if (!team) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Nova Equipe</DialogTitle>
+          <DialogTitle>Editar Equipe</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,7 +97,6 @@ export function CreateTeamDialog({ open, onOpenChange, onSave }: CreateTeamDialo
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Equipe de Vendas B"
                 required
               />
             </div>
@@ -95,7 +108,7 @@ export function CreateTeamDialog({ open, onOpenChange, onSave }: CreateTeamDialo
                 onValueChange={(value) => setFormData({ ...formData, department: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o departamento" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vendas">Vendas</SelectItem>
@@ -185,7 +198,7 @@ export function CreateTeamDialog({ open, onOpenChange, onSave }: CreateTeamDialo
               className="bg-green-600 hover:bg-green-700"
               disabled={isLoading}
             >
-              {isLoading ? "Criando..." : "Criar Equipe"}
+              {isLoading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </form>
