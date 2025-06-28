@@ -1,25 +1,14 @@
-import { useState } from "react"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/AppSidebar"
-import { ChatwootFilters } from "@/components/ChatwootFilters"
-import { ConversationStats } from "@/components/ConversationStats"
-import { ConversationManagement } from "@/components/ConversationManagement"
-import { InboxManagement } from "@/components/InboxManagement"
-import { useConversations, useUsers, useInboxes, useUpdateConversationStatus, type User } from "@/hooks/useSupabaseData"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RefreshCw, Inbox, MessageSquare, BarChart3 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { KanbanBoard } from "@/components/KanbanBoard"
-import { Kanban } from "lucide-react"
-import { ConversationForStats, Conversation } from "@/types"
 
-// Define Agent type locally to match what ChatwootFilters expects
-interface LocalAgent {
-  id: number
-  name: string
-  email: string
-}
+import { useState } from "react"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
+import { DashboardHeader } from "@/components/DashboardHeader"
+import { DashboardFilters } from "@/components/DashboardFilters"
+import { DashboardTabs } from "@/components/DashboardTabs"
+import { DashboardEmptyState } from "@/components/DashboardEmptyState"
+import { useConversations, useUsers, useInboxes, useUpdateConversationStatus } from "@/hooks/useSupabaseData"
+import { useToast } from "@/hooks/use-toast"
+import { ConversationForStats, Conversation } from "@/types"
 
 export default function Dashboard() {
   const [accountId, setAccountId] = useState("1")
@@ -98,30 +87,6 @@ export default function Dashboard() {
     return true
   })
 
-  // ✅ Filtração rigorosa de agentes para ChatwootFilters
-  const agentsForFilter: LocalAgent[] = agents
-    .filter(user => {
-      const isValid = user && 
-                     user.id && 
-                     typeof user.id === 'string' &&
-                     user.id.trim() !== '' &&
-                     user.name && 
-                     user.name.trim() !== ''
-      
-      if (!isValid) {
-        console.warn('Dashboard - Invalid agent filtered out:', user)
-      }
-      
-      return isValid
-    })
-    .map((user: User, index: number) => ({
-      id: index + 1, // Use index as number ID since ChatwootFilters expects number
-      name: user.name,
-      email: user.email
-    }))
-
-  console.log('Dashboard - Valid agents for filter:', agentsForFilter)
-
   // Convert conversations to the format expected by components
   const conversationsForStats: ConversationForStats[] = filteredConversations.map((conv: Conversation) => ({
     id: conv.id,
@@ -154,23 +119,12 @@ export default function Dashboard() {
         <AppSidebar />
         <SidebarInset>
           <div className="flex-1 space-y-6 p-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight">Painel de Atendimento ao Cliente</h1>
-                  <p className="text-muted-foreground">
-                    Gerencie suas conversas em tempo real
-                  </p>
-                </div>
-              </div>
-              <Button onClick={handleRefresh} disabled={conversationsLoading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${conversationsLoading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-            </div>
+            <DashboardHeader 
+              onRefresh={handleRefresh}
+              isLoading={conversationsLoading}
+            />
 
-            <ChatwootFilters
+            <DashboardFilters
               status={status}
               assigneeId={assigneeId}
               inboxId={inboxId}
@@ -179,78 +133,24 @@ export default function Dashboard() {
               onAssigneeChange={setAssigneeId}
               onInboxChange={setInboxId}
               onAccountIdChange={setAccountId}
-              agents={agentsForFilter}
+              agents={agents}
               inboxes={inboxes}
-              isLoading={agentsLoading || inboxesLoading}
+              agentsLoading={agentsLoading}
+              inboxesLoading={inboxesLoading}
             />
 
-            {accountIdNumber > 0 && (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="overview" className="flex items-center space-x-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Visão Geral</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="kanban" className="flex items-center space-x-2">
-                    <Kanban className="h-4 w-4" />
-                    <span>Kanban</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="conversations" className="flex items-center space-x-2">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Conversas</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="inboxes" className="flex items-center space-x-2">
-                    <Inbox className="h-4 w-4" />
-                    <span>Caixas de Entrada</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="space-y-6 mt-6">
-                  <ConversationStats
-                    conversations={conversationsForStats}
-                    isLoading={conversationsLoading}
-                  />
-                  
-                  <ConversationManagement
-                    accountId={accountIdNumber}
-                    selectedInboxId={inboxId !== "all" ? parseInt(inboxId) : undefined}
-                  />
-                </TabsContent>
-
-                <TabsContent value="kanban" className="space-y-6 mt-6">
-                  <KanbanBoard
-                    conversations={conversationsForStats}
-                    onConversationClick={(conversation) => {
-                      console.log('Opening conversation:', conversation.id)
-                    }}
-                    onStatusChange={handleKanbanStatusChange}
-                    isLoading={conversationsLoading}
-                  />
-                </TabsContent>
-
-                <TabsContent value="conversations" className="space-y-6 mt-6">
-                  <ConversationManagement
-                    accountId={accountIdNumber}
-                    selectedInboxId={inboxId !== "all" ? parseInt(inboxId) : undefined}
-                  />
-                </TabsContent>
-
-                <TabsContent value="inboxes" className="space-y-6 mt-6">
-                  <InboxManagement accountId={accountIdNumber} />
-                </TabsContent>
-              </Tabs>
-            )}
-
-            {accountIdNumber === 0 && (
-              <div className="text-center py-12">
-                <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Selecione uma conta para começar
-                </h3>
-                <p className="text-gray-500">
-                  Selecione uma conta nos filtros acima para visualizar suas conversas
-                </p>
-              </div>
+            {accountIdNumber > 0 ? (
+              <DashboardTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                accountId={accountIdNumber}
+                inboxId={inboxId}
+                conversationsForStats={conversationsForStats}
+                conversationsLoading={conversationsLoading}
+                onKanbanStatusChange={handleKanbanStatusChange}
+              />
+            ) : (
+              <DashboardEmptyState />
             )}
           </div>
         </SidebarInset>
