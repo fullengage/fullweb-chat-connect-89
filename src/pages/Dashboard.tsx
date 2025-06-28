@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -58,6 +57,10 @@ export default function Dashboard() {
 
   const updateStatus = useUpdateConversationStatus()
 
+  // ✅ Log de debug para Dashboard
+  console.log('Dashboard - Raw agents data:', agents)
+  console.log('Dashboard - agents.length:', agents?.length)
+
   const handleRefresh = () => {
     refetchConversations()
     toast({
@@ -95,6 +98,30 @@ export default function Dashboard() {
     return true
   })
 
+  // ✅ Filtração rigorosa de agentes para ChatwootFilters
+  const agentsForFilter: LocalAgent[] = agents
+    .filter(user => {
+      const isValid = user && 
+                     user.id && 
+                     typeof user.id === 'string' &&
+                     user.id.trim() !== '' &&
+                     user.name && 
+                     user.name.trim() !== ''
+      
+      if (!isValid) {
+        console.warn('Dashboard - Invalid agent filtered out:', user)
+      }
+      
+      return isValid
+    })
+    .map((user: User, index: number) => ({
+      id: index + 1, // Use index as number ID since ChatwootFilters expects number
+      name: user.name,
+      email: user.email
+    }))
+
+  console.log('Dashboard - Valid agents for filter:', agentsForFilter)
+
   // Convert conversations to the format expected by components
   const conversationsForStats: ConversationForStats[] = filteredConversations.map((conv: Conversation) => ({
     id: conv.id,
@@ -119,12 +146,6 @@ export default function Dashboard() {
     },
     updated_at: conv.updated_at,
     messages: conv.messages || []
-  }))
-
-  const agentsForFilter: LocalAgent[] = agents.map((user: User, index: number) => ({
-    id: index + 1, // Use index as number ID since ChatwootFilters expects number
-    name: user.name,
-    email: user.email
   }))
 
   return (

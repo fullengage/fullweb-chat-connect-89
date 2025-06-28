@@ -81,6 +81,10 @@ export default function Conversations() {
     isLoading: inboxesLoading
   } = useInboxes(accountIdNumber)
 
+  // ✅ Log de debug para Conversations page
+  console.log('Conversations page - Raw agents data:', agents)
+  console.log('Conversations page - agents.length:', agents?.length)
+
   const handleRefresh = () => {
     refetchConversations()
     toast({
@@ -222,11 +226,34 @@ export default function Conversations() {
                     <SelectContent>
                       <SelectItem value="all">Todos os Responsáveis</SelectItem>
                       <SelectItem value="unassigned">Não Atribuído</SelectItem>
-                      {agents.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </SelectItem>
-                      ))}
+                      {agents
+                        .filter(agent => {
+                          // ✅ Verificação antes de renderizar SelectItem
+                          const isValid = agent && 
+                                         agent.id && 
+                                         typeof agent.id === 'string' &&
+                                         agent.id.trim() !== '' &&
+                                         agent.name && 
+                                         agent.name.trim() !== ''
+                          
+                          if (!isValid) {
+                            console.error('Conversations page - About to render invalid SelectItem:', agent)
+                          }
+                          
+                          return isValid
+                        })
+                        .map((agent) => {
+                          console.log('Conversations page - Rendering SelectItem for agent:', { 
+                            id: agent.id, 
+                            name: agent.name 
+                          })
+                          
+                          return (
+                            <SelectItem key={agent.id} value={agent.id}>
+                              {agent.name}
+                            </SelectItem>
+                          )
+                        })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -239,11 +266,25 @@ export default function Conversations() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os Canais</SelectItem>
-                      {inboxes.map((inbox) => (
-                        <SelectItem key={inbox.id} value={inbox.id.toString()}>
-                          {inbox.name} ({inbox.channel_type})
-                        </SelectItem>
-                      ))}
+                      {inboxes
+                        .filter(inbox => {
+                          // ✅ Verificação antes de renderizar SelectItem
+                          const isValid = inbox && 
+                                         inbox.id && 
+                                         inbox.name && 
+                                         inbox.name.trim() !== ''
+                          
+                          if (!isValid) {
+                            console.error('Conversations page - About to render invalid inbox SelectItem:', inbox)
+                          }
+                          
+                          return isValid
+                        })
+                        .map((inbox) => (
+                          <SelectItem key={inbox.id} value={inbox.id.toString()}>
+                            {inbox.name} ({inbox.channel_type})
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

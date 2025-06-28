@@ -68,12 +68,34 @@ export const ConversationManagement = ({
     isLoading: agentsLoading
   } = useUsers(accountId)
 
+  // ✅ Log de debug para agentes
+  console.log('ConversationManagement - Raw agents data:', agents)
+  console.log('ConversationManagement - agents.length:', agents?.length)
+
   // Convert User[] to LocalAgent[] format expected by ConversationDetail
-  const agentsForFilter: LocalAgent[] = agents.map((user: User, index: number) => ({
-    id: index + 1, // Use index as number ID since ConversationDetail expects number
-    name: user.name,
-    email: user.email
-  }))
+  const agentsForFilter: LocalAgent[] = agents
+    .filter(user => {
+      // ✅ Filtração rigorosa
+      const isValid = user && 
+                     user.id && 
+                     typeof user.id === 'string' &&
+                     user.id.trim() !== '' &&
+                     user.name && 
+                     user.name.trim() !== ''
+      
+      if (!isValid) {
+        console.warn('ConversationManagement - Invalid agent filtered out:', user)
+      }
+      
+      return isValid
+    })
+    .map((user: User, index: number) => ({
+      id: index + 1, // Use index as number ID since ConversationDetail expects number
+      name: user.name,
+      email: user.email
+    }))
+
+  console.log('ConversationManagement - Valid agents for filter:', agentsForFilter)
 
   const handleConversationClick = (conversation: Conversation) => {
     setSelectedConversation(conversation)
@@ -179,11 +201,34 @@ export const ConversationManagement = ({
                 <SelectContent>
                   <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="unassigned">Não atribuídos</SelectItem>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
+                  {agents
+                    .filter(agent => {
+                      // ✅ Verificação antes de renderizar SelectItem
+                      const isValid = agent && 
+                                     agent.id && 
+                                     typeof agent.id === 'string' &&
+                                     agent.id.trim() !== '' &&
+                                     agent.name && 
+                                     agent.name.trim() !== ''
+                      
+                      if (!isValid) {
+                        console.error('ConversationManagement - About to render invalid SelectItem:', agent)
+                      }
+                      
+                      return isValid
+                    })
+                    .map((agent) => {
+                      console.log('ConversationManagement - Rendering SelectItem for agent:', { 
+                        id: agent.id, 
+                        name: agent.name 
+                      })
+                      
+                      return (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name}
+                        </SelectItem>
+                      )
+                    })}
                 </SelectContent>
               </Select>
 
