@@ -68,7 +68,7 @@ export const useUsers = (account_id: number) => {
 
       try {
         // ✅ Usar função segura do banco de dados com retry logic
-        const { data, error } = await supabase.rpc('get_valid_users')
+        let { data, error } = await supabase.rpc('get_valid_users')
 
         if (error) {
           console.error('❌ Database error:', error)
@@ -77,9 +77,9 @@ export const useUsers = (account_id: number) => {
           if (error.message.includes('timeout') || error.message.includes('connection')) {
             console.log('🔄 Retrying query due to connection error...')
             // Fazer uma segunda tentativa
-            const { data: retryData, error: retryError } = await supabase.rpc('get_valid_users')
-            if (retryError) throw retryError
-            data = retryData
+            const retryResult = await supabase.rpc('get_valid_users')
+            if (retryResult.error) throw retryResult.error
+            data = retryResult.data
           } else {
             throw error
           }
