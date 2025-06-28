@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload } from "lucide-react";
+import { Upload, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface NewAgentDialogProps {
@@ -24,10 +24,12 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
     role: "",
     teams: [] as string[],
     status: "offline",
-    avatar: ""
+    avatar: "",
+    password: ""
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const teams = ["Vendas", "Suporte", "Técnico", "Financeiro"];
   const roles = [
@@ -53,6 +55,12 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
       newErrors.email = "Email é obrigatório";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Email inválido";
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = "Senha é obrigatória";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Senha deve ter pelo menos 6 caracteres";
     }
 
     if (!formData.role) {
@@ -85,6 +93,19 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
     }));
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData(prev => ({ ...prev, password }));
+    toast({
+      title: "Senha gerada",
+      description: "Uma senha segura foi gerada automaticamente.",
+    });
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -101,7 +122,8 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
         role: "",
         teams: [],
         status: "offline",
-        avatar: ""
+        avatar: "",
+        password: ""
       });
       setErrors({});
     } catch (error) {
@@ -113,7 +135,7 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo Agente</DialogTitle>
         </DialogHeader>
@@ -153,6 +175,43 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
               className={errors.email ? "border-red-500" : ""}
             />
             {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
+          </div>
+
+          {/* Password */}
+          <div>
+            <Label htmlFor="password">Senha *</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className={errors.password ? "border-red-500 pr-20" : "pr-20"}
+                placeholder="Digite uma senha segura"
+              />
+              <div className="absolute right-1 top-1 flex space-x-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={generatePassword}
+                >
+                  Gerar
+                </Button>
+              </div>
+            </div>
+            {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password}</p>}
+            <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres. Use o botão "Gerar" para criar uma senha segura.</p>
           </div>
 
           {/* Phone */}
@@ -225,7 +284,7 @@ export const NewAgentDialog = ({ open, onOpenChange, onSave }: NewAgentDialogPro
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "Salvando..." : "Salvar"}
+            {isLoading ? "Criando..." : "Criar Agente"}
           </Button>
         </DialogFooter>
       </DialogContent>

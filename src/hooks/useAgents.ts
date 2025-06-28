@@ -145,37 +145,103 @@ export const useCreateAgent = () => {
   const { toast } = useToast()
 
   return useMutation({
-    mutationFn: async (agentData: Omit<Agent, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('agents')
-        .insert({
-          ...agentData,
-          last_activity: new Date().toISOString()
-        })
-        .select()
-        .single()
-
-      if (error) throw error
+    mutationFn: async (agentData: Omit<Agent, 'id' | 'created_at' | 'updated_at'> & { password: string }) => {
+      console.log('Creating new agent with authentication...')
       
-      // Create initial stats entry
-      await supabase
-        .from('agent_stats')
-        .insert({
-          agent_id: data.id,
-          conversations_today: 0,
-          avg_response_time_seconds: 0,
-          resolution_rate: 0,
-          rating: 0,
-          attendances: 0
-        })
+      // 1. Primeiro, criar o usuário autenticado no Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: agentData.email,
+        password: agentData.password,
+        email_confirm: true, // Auto-confirmar email
+        user_metadata: {
+          name: agentData.name,
+          role: agentData.role
+        }
+      })
 
-      return data
+      if (authError) {
+        console.error('Error creating auth user:', authError)
+        throw new Error(`Erro ao criar conta de autenticação: ${authError.message}`)
+      }
+
+      if (!authData.user) {
+        throw new Error('Falha ao criar usuário autenticado')
+      }
+
+      console.log('Auth user created:', authData.user.id)
+
+      try {
+        // 2. Criar registro na tabela users
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            auth_user_id: authData.user.id,
+            account_id: agentData.account_id,
+            name: agentData.name,
+            email: agentData.email,
+            phone: agentData.phone,
+            role: agentData.role,
+            isactive: true
+          })
+
+        if (userError) {
+          console.error('Error creating user record:', userError)
+          // Se falhar, deletar o usuário autenticado criado
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          throw new Error(`Erro ao criar registro do usuário: ${userError.message}`)
+        }
+
+        // 3. Criar registro na tabela agents
+        const { data: agentRecord, error: agentError } = await supabase
+          .from('agents')
+          .insert({
+            account_id: agentData.account_id,
+            name: agentData.name,
+            email: agentData.email,
+            phone: agentData.phone,
+            role: agentData.role,
+            status: agentData.status,
+            teams: agentData.teams,
+            is_active: true,
+            last_activity: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (agentError) {
+          console.error('Error creating agent record:', agentError)
+          // Se falhar, deletar o usuário autenticado criado
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          throw new Error(`Erro ao criar registro do agente: ${agentError.message}`)
+        }
+
+        // 4. Criar estatísticas iniciais do agente
+        await supabase
+          .from('agent_stats')
+          .insert({
+            agent_id: agentRecord.id,
+            conversations_today: 0,
+            avg_response_time_seconds: 0,
+            resolution_rate: 0,
+            rating: 0,
+            attendances: 0
+          })
+
+        console.log('Agent created successfully:', agentRecord.id)
+        return agentRecord
+
+      } catch (error) {
+        // Se algo der errado após criar o usuário autenticado, limpar
+        console.error('Error in agent creation process:', error)
+        await supabase.auth.admin.deleteUser(authData.user.id)
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agents'] })
       toast({
-        title: "Agente criado",
-        description: "Novo agente criado com sucesso.",
+        title: "Agente criado com sucesso",
+        description: "O agente foi criado e pode fazer login no sistema.",
       })
     },
     onError: (error: any) => {

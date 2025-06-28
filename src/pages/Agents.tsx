@@ -36,7 +36,8 @@ const Agents = () => {
         status: newAgentData.status,
         teams: newAgentData.teams,
         is_active: true,
-        last_activity: new Date().toISOString()
+        last_activity: new Date().toISOString(),
+        password: newAgentData.password // Incluir senha
       });
       setIsNewAgentOpen(false);
     } catch (error) {
