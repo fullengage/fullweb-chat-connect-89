@@ -40,35 +40,58 @@ export const AssignmentDialogContent = ({
   onUnassign,
   onClose
 }: AssignmentDialogContentProps) => {
+  
+  // ✅ Função robusta para renderizar SelectItems
   const renderSelectItems = () => {
+    console.log('🎯 Rendering SelectItems for agents:', validAgents?.length || 0)
+    
+    if (!Array.isArray(validAgents) || validAgents.length === 0) {
+      console.warn('⚠️ No valid agents available for SelectItems')
+      return (
+        <SelectItem value="no-agents" disabled>
+          Nenhum agente disponível
+        </SelectItem>
+      )
+    }
+
     return validAgents
       .filter(agent => {
+        // ✅ Validação rigorosa antes de renderizar
         const isValidForRender = agent && 
                                agent.id && 
                                typeof agent.id === 'string' &&
                                agent.id.trim() !== '' &&
-                               agent.id !== "" &&
                                agent.id !== "null" &&
                                agent.id !== "undefined" &&
+                               agent.id.length >= 10 && // UUIDs são longos
                                agent.name &&
+                               typeof agent.name === 'string' &&
                                agent.name.trim() !== ''
 
         if (!isValidForRender) {
-          console.error('Agent filtered out at render time:', agent)
+          console.warn('⚠️ Agent filtered out at render time:', {
+            id: agent?.id,
+            name: agent?.name,
+            hasId: !!agent?.id,
+            idType: typeof agent?.id,
+            idLength: agent?.id?.length,
+            hasName: !!agent?.name,
+            nameType: typeof agent?.name
+          })
         }
         
         return isValidForRender
       })
       .map((agent) => {
-        console.log('Rendering SelectItem:', { 
+        console.log('✅ Rendering SelectItem for agent:', { 
           id: agent.id, 
           name: agent.name,
-          idType: typeof agent.id,
-          idLength: agent.id?.length 
+          email: agent.email?.substring(0, 10) + '...'
         })
         
-        if (!agent.id || agent.id.trim() === '' || agent.id === "") {
-          console.error('CRITICAL: About to render SelectItem with empty value!', agent)
+        // ✅ Validação final antes de criar o SelectItem
+        if (!agent.id || agent.id.trim() === '') {
+          console.error('❌ CRITICAL: About to render SelectItem with empty value!', agent)
           return null
         }
         
@@ -78,7 +101,17 @@ export const AssignmentDialogContent = ({
           </SelectItem>
         )
       })
-      .filter(Boolean)
+      .filter(Boolean) // Remove nulls
+  }
+
+  // ✅ Validação se pode atribuir
+  const canAssign = () => {
+    return selectedAgentId && 
+           selectedAgentId !== "none" && 
+           selectedAgentId !== "no-agents" &&
+           selectedAgentId.trim() !== '' && 
+           selectedAgentId !== "" && 
+           !isAssigning
   }
 
   if (currentAssignee) {
@@ -114,11 +147,7 @@ export const AssignmentDialogContent = ({
             </Button>
             <Button 
               onClick={onAssign}
-              disabled={!selectedAgentId || 
-                       selectedAgentId === "none" || 
-                       selectedAgentId.trim() === '' || 
-                       selectedAgentId === "" || 
-                       isAssigning}
+              disabled={!canAssign()}
             >
               {isAssigning ? "Atribuindo..." : "Reatribuir"}
             </Button>
@@ -156,11 +185,7 @@ export const AssignmentDialogContent = ({
           </Button>
           <Button 
             onClick={onAssign}
-            disabled={!selectedAgentId || 
-                     selectedAgentId === "none" || 
-                     selectedAgentId.trim() === '' || 
-                     selectedAgentId === "" || 
-                     isAssigning}
+            disabled={!canAssign()}
           >
             {isAssigning ? "Atribuindo..." : "Atribuir"}
           </Button>

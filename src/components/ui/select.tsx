@@ -110,32 +110,22 @@ const SelectLabel = React.forwardRef<
 ))
 SelectLabel.displayName = SelectPrimitive.Label.displayName
 
-// ✅ SelectItem com verificação de valor vazio
+// ✅ SelectItem com validação robusta
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, value, ...props }, ref) => {
-  // ✅ Log de debug para capturar valores problemáticos
-  console.log('SelectItem rendered with value:', { 
-    value, 
-    valueType: typeof value, 
-    isEmpty: !value || value === '' || value.trim() === '',
-    children: typeof children === 'string' ? children : 'complex children'
-  })
+  // ✅ Validação rigorosa de valor
+  const isValidValue = React.useMemo(() => {
+    if (!value || typeof value !== 'string') return false
+    if (value.trim() === '' || value === 'null' || value === 'undefined') return false
+    if (value.length < 1) return false
+    return true
+  }, [value])
 
-  // ✅ Verificação rigorosa de valor vazio
-  if (!value || 
-      value === '' || 
-      value.trim() === '' ||
-      value === 'null' ||
-      value === 'undefined') {
-    console.error('CRITICAL: SelectItem with empty/invalid value detected!', { 
-      value, 
-      children, 
-      stackTrace: new Error().stack 
-    })
-    
-    // Não renderizar o item se o valor for inválido
+  // ✅ Não renderizar se o valor for inválido
+  if (!isValidValue) {
+    console.warn('SelectItem: Invalid value detected, skipping render:', { value, children })
     return null
   }
 

@@ -16,6 +16,36 @@ interface ConversationFilters {
 // Global channel registry to prevent duplicate subscriptions
 const activeChannels = new Map<string, any>()
 
+// ✅ Função para sanitizar filtros
+const sanitizeFilters = (filters: ConversationFilters): ConversationFilters | null => {
+  // Validar account_id
+  if (!filters.account_id || typeof filters.account_id !== 'number' || filters.account_id <= 0) {
+    console.warn('❌ Invalid account_id in filters:', filters.account_id)
+    return null
+  }
+
+  const sanitized: ConversationFilters = {
+    account_id: filters.account_id
+  }
+
+  // Sanitizar status
+  if (filters.status && typeof filters.status === 'string' && filters.status.trim() !== '' && filters.status !== 'all') {
+    sanitized.status = filters.status.trim()
+  }
+
+  // Sanitizar assignee_id
+  if (filters.assignee_id && typeof filters.assignee_id === 'string' && filters.assignee_id.trim() !== '' && filters.assignee_id !== 'all') {
+    sanitized.assignee_id = filters.assignee_id.trim()
+  }
+
+  // Sanitizar kanban_stage
+  if (filters.kanban_stage && typeof filters.kanban_stage === 'string' && filters.kanban_stage.trim() !== '') {
+    sanitized.kanban_stage = filters.kanban_stage.trim()
+  }
+
+  return sanitized
+}
+
 export const useConversations = (filters: ConversationFilters) => {
   const { toast } = useToast()
   const { user: authUser } = useAuth()
@@ -25,111 +55,168 @@ export const useConversations = (filters: ConversationFilters) => {
   const query = useQuery({
     queryKey: ['conversations', filters, authUser?.id],
     queryFn: async () => {
-      console.log('Fetching conversations with filters:', filters)
+      console.log('🔍 Fetching conversations with filters:', filters)
       
       if (!authUser) {
         throw new Error('User not authenticated')
       }
 
-      // Buscar dados do usuário na nossa tabela users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (userError || !userData) {
-        console.error('User data error:', userError)
-        throw new Error('User data not found')
+      // ✅ Sanitizar filtros antes de usar
+      const sanitizedFilters = sanitizeFilters(filters)
+      if (!sanitizedFilters) {
+        console.warn('❌ Invalid filters provided, returning empty array')
+        return []
       }
 
-      let query = supabase
-        .from('conversations')
-        .select(`
-          *,
-          contact:contacts(*),
-          assignee:users(*)
-        `)
-        .order('updated_at', { ascending: false })
+      try {
+        // Buscar dados do usuário na nossa tabela users
+        console.log('📤 Fetching current user data...')
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_user_id', authUser.id)
+          .single()
 
-      // Aplicar filtros baseados no papel do usuário
-      if (userData.role === 'superadmin') {
-        // Superadmin pode ver conversas de qualquer conta se especificada
-        if (filters.account_id) {
-          query = query.eq('account_id', filters.account_id)
+        if (userError || !userData) {
+          console.error('❌ User data error:', userError)
+          throw new Error('User data not found')
         }
-      } else if (userData.role === 'admin') {
-        // Admin pode ver todas as conversas da sua conta
-        query = query.eq('account_id', userData.account_id)
-      } else if (userData.role === 'agent') {
-        // Agent só pode ver conversas da sua conta que estão atribuídas a ele ou não atribuídas
-        query = query
-          .eq('account_id', userData.account_id)
-          .or(`assignee_id.eq.${userData.id},assignee_id.is.null`)
-      } else {
-        throw new Error('Invalid user role')
-      }
 
-      // Aplicar filtros adicionais
-      if (filters.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status)
-      }
-
-      if (filters.assignee_id && filters.assignee_id !== 'all') {
-        if (filters.assignee_id === 'unassigned') {
-          query = query.is('assignee_id', null)
-        } else {
-          query = query.eq('assignee_id', filters.assignee_id)
-        }
-      }
-
-      if (filters.kanban_stage) {
-        query = query.eq('kanban_stage', filters.kanban_stage)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Database error:', error)
-        toast({
-          title: "Erro ao buscar conversas",
-          description: error.message,
-          variant: "destructive",
+        console.log('✅ Current user data loaded:', { 
+          id: userData.id, 
+          role: userData.role, 
+          account_id: userData.account_id 
         })
+
+        // ✅ Construir query com validação
+        let query = supabase
+          .from('conversations')
+          .select(`
+            *,
+            contact:contacts(*),
+            assignee:users(*)
+          `)
+          .order('updated_at', { ascending: false })
+
+        // Aplicar filtros baseados no papel do usuário
+        if (userData.role === 'superadmin') {
+          // Superadmin pode ver conversas de qualquer conta se especificada
+          if (sanitizedFilters.account_id) {
+            query = query.eq('account_id', sanitizedFilters.account_id)
+            console.log('🔧 Applied superadmin account filter:', sanitizedFilters.account_id)
+          }
+        } else if (userData.role === 'admin') {
+          // Admin pode ver todas as conversas da sua conta
+          query = query.eq('account_id', userData.account_id)
+          console.log('🔧 Applied admin account filter:', userData.account_id)
+        } else if (userData.role === 'agent') {
+          // Agent só pode ver conversas da sua conta que estão atribuídas a ele ou não atribuídas
+          query = query
+            .eq('account_id', userData.account_id)
+            .or(`assignee_id.eq.${userData.id},assignee_id.is.null`)
+          console.log('🔧 Applied agent filters:', { account_id: userData.account_id, user_id: userData.id })
+        } else {
+          throw new Error('Invalid user role: ' + userData.role)
+        }
+
+        // Aplicar filtros adicionais
+        if (sanitizedFilters.status) {
+          query = query.eq('status', sanitizedFilters.status)
+          console.log('🔧 Applied status filter:', sanitizedFilters.status)
+        }
+
+        if (sanitizedFilters.assignee_id) {
+          if (sanitizedFilters.assignee_id === 'unassigned') {
+            query = query.is('assignee_id', null)
+            console.log('🔧 Applied unassigned filter')
+          } else {
+            query = query.eq('assignee_id', sanitizedFilters.assignee_id)
+            console.log('🔧 Applied assignee filter:', sanitizedFilters.assignee_id)
+          }
+        }
+
+        if (sanitizedFilters.kanban_stage) {
+          query = query.eq('kanban_stage', sanitizedFilters.kanban_stage)
+          console.log('🔧 Applied kanban_stage filter:', sanitizedFilters.kanban_stage)
+        }
+
+        console.log('📤 Executing conversations query...')
+        const { data, error } = await query
+
+        if (error) {
+          console.error('❌ Database error:', error)
+          
+          // ✅ Tratamento específico de erros
+          let errorMessage = 'Erro ao buscar conversas'
+          if (error.message.includes('permission')) {
+            errorMessage = 'Sem permissão para acessar conversas'
+          } else if (error.message.includes('connection')) {
+            errorMessage = 'Erro de conexão com o banco de dados'
+          } else if (error.message.includes('timeout')) {
+            errorMessage = 'Tempo limite excedido'
+          }
+          
+          toast({
+            title: "Erro ao buscar conversas",
+            description: errorMessage,
+            variant: "destructive",
+          })
+          throw error
+        }
+
+        // ✅ Validar dados retornados
+        if (!Array.isArray(data)) {
+          console.warn('❌ Invalid data format received')
+          return []
+        }
+
+        // Transform data to include inbox information and calculate unread count
+        const conversationsWithInbox = data.map(conversation => ({
+          ...conversation,
+          inbox: {
+            id: 1,
+            name: 'Chat Interno',
+            channel_type: 'webchat'
+          },
+          messages: [],
+          unread_count: 0
+        }))
+
+        console.log('✅ Conversations fetched successfully:', conversationsWithInbox.length)
+        return conversationsWithInbox as Conversation[]
+        
+      } catch (error: any) {
+        console.error('❌ Error in useConversations:', error)
         throw error
       }
-
-      // Transform data to include inbox information and calculate unread count
-      const conversationsWithInbox = data?.map(conversation => ({
-        ...conversation,
-        inbox: {
-          id: 1,
-          name: 'Chat Interno',
-          channel_type: 'webchat'
-        },
-        messages: [],
-        unread_count: 0
-      })) || []
-
-      console.log('Conversations fetched successfully:', conversationsWithInbox.length)
-      return conversationsWithInbox as Conversation[]
     },
-    enabled: !!authUser && !!filters.account_id,
+    enabled: !!authUser && !!sanitizeFilters(filters),
     refetchInterval: 30000,
+    retry: (failureCount, error: any) => {
+      // ✅ Retry logic customizado
+      if (failureCount >= 3) return false
+      if (error?.message?.includes('permission')) return false
+      if (error?.message?.includes('User data not found')) return false
+      return true
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 
   // Set up realtime subscription with improved channel management
   useEffect(() => {
     if (!authUser || !filters.account_id) return
 
-    const channelKey = `conversations-${filters.account_id}`
+    const sanitizedFilters = sanitizeFilters(filters)
+    if (!sanitizedFilters) return
+
+    const channelKey = `conversations-${sanitizedFilters.account_id}`
     const instanceChannelKey = `${channelKey}-${hookInstanceId.current}`
 
     // Check if a channel for this account already exists
     let channel = activeChannels.get(channelKey)
     
     if (!channel) {
-      console.log('Creating new realtime subscription for account:', filters.account_id)
+      console.log('📡 Creating new realtime subscription for account:', sanitizedFilters.account_id)
       
       channel = supabase
         .channel(instanceChannelKey)
@@ -139,10 +226,10 @@ export const useConversations = (filters: ConversationFilters) => {
             event: '*',
             schema: 'public',
             table: 'conversations',
-            filter: `account_id=eq.${filters.account_id}`
+            filter: `account_id=eq.${sanitizedFilters.account_id}`
           },
           () => {
-            console.log('Conversations realtime update received')
+            console.log('📡 Conversations realtime update received')
             queryClient.invalidateQueries({ queryKey: ['conversations'] })
           }
         )
@@ -154,7 +241,7 @@ export const useConversations = (filters: ConversationFilters) => {
             table: 'messages'
           },
           () => {
-            console.log('Messages realtime update received')
+            console.log('📡 Messages realtime update received')
             queryClient.invalidateQueries({ queryKey: ['conversations'] })
           }
         )
@@ -162,19 +249,19 @@ export const useConversations = (filters: ConversationFilters) => {
       // Subscribe only once
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to realtime updates')
+          console.log('✅ Successfully subscribed to realtime updates')
           activeChannels.set(channelKey, channel)
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Channel subscription error')
+          console.error('❌ Channel subscription error')
           activeChannels.delete(channelKey)
         }
       })
     } else {
-      console.log('Reusing existing realtime subscription for account:', filters.account_id)
+      console.log('♻️ Reusing existing realtime subscription for account:', sanitizedFilters.account_id)
     }
 
     return () => {
-      console.log('Cleaning up realtime subscription for instance:', hookInstanceId.current)
+      console.log('🧹 Cleaning up realtime subscription for instance:', hookInstanceId.current)
       // Only clean up if this is the last instance using this channel
       const currentChannel = activeChannels.get(channelKey)
       if (currentChannel) {
@@ -183,7 +270,7 @@ export const useConversations = (filters: ConversationFilters) => {
         setTimeout(() => {
           const stillActiveChannel = activeChannels.get(channelKey)
           if (stillActiveChannel) {
-            console.log('Removing channel from active channels')
+            console.log('🗑️ Removing channel from active channels')
             supabase.removeChannel(stillActiveChannel)
             activeChannels.delete(channelKey)
           }
