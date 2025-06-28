@@ -62,7 +62,7 @@ export default function Kanban() {
   const handleStatusChange = async (conversationId: number, newStatus: string) => {
     try {
       await updateStatus.mutateAsync({
-        id: conversationId,
+        conversationId: conversationId,
         status: newStatus
       })
       
@@ -95,6 +95,31 @@ export default function Kanban() {
       description: "Buscando as informações mais recentes...",
     })
   }
+
+  // Transform Conversation[] to ConversationForStats[]
+  const conversationsForStats: ConversationForStats[] = conversations.map(conversation => ({
+    ...conversation,
+    unread_count: conversation.unread_count || 0, // Ensure unread_count is always a number
+    contact: conversation.contact || {
+      id: 0,
+      name: 'Unknown Contact',
+      email: '',
+      phone: '',
+      avatar_url: ''
+    },
+    assignee: conversation.assignee ? {
+      id: conversation.assignee.id,
+      name: conversation.assignee.name,
+      avatar_url: conversation.assignee.avatar_url
+    } : undefined,
+    inbox: conversation.inbox || {
+      id: 1,
+      name: 'Chat Interno',
+      channel_type: 'webchat'
+    },
+    updated_at: conversation.updated_at || new Date().toISOString(),
+    messages: conversation.messages || []
+  }))
 
   if (!currentUser) {
     return (
@@ -133,7 +158,7 @@ export default function Kanban() {
             {/* Kanban Board */}
             <div className="flex-1 p-6 overflow-auto">
               <KanbanBoard
-                conversations={conversations}
+                conversations={conversationsForStats}
                 onConversationClick={handleConversationClick}
                 onStatusChange={handleStatusChange}
                 isLoading={conversationsLoading}
