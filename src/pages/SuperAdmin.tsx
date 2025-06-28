@@ -28,229 +28,100 @@ import {
   User,
   Loader2
 } from 'lucide-react';
+import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '@/hooks/useAccounts';
+import { NewAccountDialog } from '@/components/NewAccountDialog';
 
 const SuperAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  // Mock data - pronto para integração com Supabase
-  const [metrics, setMetrics] = useState({
-    activeCompanies: 19,
-    trialCompanies: 5,
-    blockedCompanies: 2,
-    totalCompanies: 26,
-    mrr: 8400
-  });
+  // Hooks do Supabase
+  const { data: accounts = [], isLoading: loading, error } = useAccounts();
+  const createAccountMutation = useCreateAccount();
+  const updateAccountMutation = useUpdateAccount();
+  const deleteAccountMutation = useDeleteAccount();
 
-  const [companies, setCompanies] = useState([
-    {
-      id: 1,
-      name: 'Clínica Vida',
-      cnpj: '12.345.678/0001-90',
-      email: 'contato@clinicavida.com',
-      status: 'active',
-      plans: { name: 'Pro', price: 497 },
-      subscriptions: [{ due_date: '2024-06-23', last_payment: '2024-05-23', status: 'overdue' }],
-      created_at: '2024-01-15'
-    },
-    {
-      id: 2,
-      name: 'Agência ZYX',
-      cnpj: '98.765.432/0001-10',
-      email: 'contato@agenciazyx.com',
-      status: 'active',
-      plans: { name: 'Básico', price: 297 },
-      subscriptions: [{ due_date: '2024-06-26', last_payment: '2024-05-26', status: 'overdue' }],
-      created_at: '2024-02-10'
-    },
-    {
-      id: 3,
-      name: 'TechStart Solutions',
-      cnpj: '11.222.333/0001-44',
-      email: 'hello@techstart.com',
-      status: 'active',
-      plans: { name: 'Pro', price: 497 },
-      subscriptions: [{ due_date: '2024-07-15', last_payment: '2024-06-15', status: 'active' }],
-      created_at: '2024-03-05'
-    },
-    {
-      id: 4,
-      name: 'Consultoria ABC',
-      cnpj: '55.666.777/0001-88',
-      email: 'info@consultoriaabc.com',
-      status: 'trial',
-      plans: { name: 'Trial', price: 0 },
-      subscriptions: [{ due_date: '2024-07-05', last_payment: null, status: 'trial' }],
-      created_at: '2024-06-05'
-    },
-    {
-      id: 5,
-      name: 'Empresa Beta',
-      cnpj: '99.888.777/0001-66',
-      email: 'contato@beta.com',
-      status: 'blocked',
-      plans: { name: 'Básico', price: 297 },
-      subscriptions: [{ due_date: '2024-06-10', last_payment: '2024-05-10', status: 'blocked' }],
-      created_at: '2024-01-20'
-    }
-  ]);
-
-  const [plans] = useState([
-    { id: 1, name: 'Trial', price: 0 },
-    { id: 2, name: 'Básico', price: 297 },
-    { id: 3, name: 'Pro', price: 497 }
-  ]);
-
-  // Formulário de nova empresa
-  const [newCompany, setNewCompany] = useState({
-    name: '',
-    cnpj: '',
-    email: '',
-    plan_id: '',
-    is_trial: false
-  });
-
-  // Carregar dados iniciais (mock)
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
-  }, []);
-
-  const createCompany = async () => {
-    if (!newCompany.name || !newCompany.plan_id) return;
+  // Calcular métricas baseadas nos dados reais
+  const metrics = React.useMemo(() => {
+    const activeCompanies = accounts.filter(acc => acc.is_active).length;
+    const totalCompanies = accounts.length;
+    const blockedCompanies = accounts.filter(acc => !acc.is_active).length;
     
-    setLoading(true);
-    
-    setTimeout(() => {
-      const selectedPlan = plans.find(p => p.id.toString() === newCompany.plan_id);
-      const newId = Math.max(...companies.map(c => c.id)) + 1;
-      
-      const dueDate = new Date();
-      if (newCompany.is_trial) {
-        dueDate.setDate(dueDate.getDate() + 30);
-      } else {
-        dueDate.setMonth(dueDate.getMonth() + 1);
-      }
-      
-      const company = {
-        id: newId,
-        name: newCompany.name,
-        cnpj: newCompany.cnpj,
-        email: newCompany.email,
-        status: newCompany.is_trial ? 'trial' : 'active',
-        plans: selectedPlan,
-        subscriptions: [{
-          due_date: dueDate.toISOString(),
-          last_payment: newCompany.is_trial ? null : new Date().toISOString(),
-          status: newCompany.is_trial ? 'trial' : 'active'
-        }],
-        created_at: new Date().toISOString()
-      };
-      
-      setCompanies(prev => [company, ...prev]);
-      
-      const newStatus = newCompany.is_trial ? 'trial' : 'active';
-      setMetrics(prev => ({
-        ...prev,
-        totalCompanies: prev.totalCompanies + 1,
-        [newStatus === 'trial' ? 'trialCompanies' : 'activeCompanies']: prev[newStatus === 'trial' ? 'trialCompanies' : 'activeCompanies'] + 1,
-        mrr: newStatus === 'active' ? prev.mrr + (selectedPlan?.price || 0) : prev.mrr
-      }));
-      
-      setNewCompany({ name: '', cnpj: '', email: '', plan_id: '', is_trial: false });
+    return {
+      activeCompanies,
+      trialCompanies: 0, // Pode ser implementado com base no plan_id
+      blockedCompanies,
+      totalCompanies,
+      mrr: 0 // Pode ser calculado com base nos planos
+    };
+  }, [accounts]);
+
+  const handleCreateCompany = async (accountData: any) => {
+    try {
+      await createAccountMutation.mutateAsync({
+        name: accountData.name,
+        email: accountData.email,
+        phone: accountData.phone,
+        cnpj: accountData.cnpj,
+        city: accountData.city,
+        state: accountData.state,
+        industry: accountData.industry,
+        description: accountData.description,
+        plan_id: accountData.plan_id,
+        is_active: true
+      });
       setIsCreateCompanyOpen(false);
-      setLoading(false);
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating company:', error);
+    }
   };
 
-  const toggleCompanyStatus = async (companyId: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-    
-    setCompanies(prev => prev.map(company => 
-      company.id === companyId 
-        ? { 
-            ...company, 
-            status: newStatus,
-            subscriptions: company.subscriptions.map(sub => ({ ...sub, status: newStatus }))
-          }
-        : company
-    ));
-    
-    setMetrics(prev => ({
-      ...prev,
-      activeCompanies: newStatus === 'active' ? prev.activeCompanies + 1 : prev.activeCompanies - 1,
-      blockedCompanies: newStatus === 'blocked' ? prev.blockedCompanies + 1 : prev.blockedCompanies - 1
-    }));
+  const toggleCompanyStatus = async (accountId: number, currentStatus: boolean) => {
+    try {
+      await updateAccountMutation.mutateAsync({
+        id: accountId,
+        name: accounts.find(acc => acc.id === accountId)?.name || '',
+        email: accounts.find(acc => acc.id === accountId)?.email || '',
+        is_active: !currentStatus
+      });
+    } catch (error) {
+      console.error('Error toggling company status:', error);
+    }
   };
 
-  const deleteCompany = async (companyId: number) => {
+  const deleteCompany = async (accountId: number) => {
     if (!confirm('Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita.')) {
       return;
     }
     
-    const company = companies.find(c => c.id === companyId);
-    if (!company) return;
-    
-    setCompanies(prev => prev.filter(c => c.id !== companyId));
-    
-    setMetrics(prev => ({
-      ...prev,
-      totalCompanies: prev.totalCompanies - 1,
-      [company.status === 'active' ? 'activeCompanies' : 
-       company.status === 'trial' ? 'trialCompanies' : 'blockedCompanies']: 
-       prev[company.status === 'active' ? 'activeCompanies' : 
-           company.status === 'trial' ? 'trialCompanies' : 'blockedCompanies'] - 1,
-      mrr: company.status === 'active' ? prev.mrr - (company.plans?.price || 0) : prev.mrr
-    }));
+    try {
+      await deleteAccountMutation.mutateAsync(accountId);
+    } catch (error) {
+      console.error('Error deleting company:', error);
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      active: { label: 'Ativa', className: 'bg-green-100 text-green-800' },
-      trial: { label: 'Trial', className: 'bg-blue-100 text-blue-800' },
-      blocked: { label: 'Bloqueada', className: 'bg-red-100 text-red-800' },
-      overdue: { label: 'Em Débito', className: 'bg-orange-100 text-orange-800' }
-    };
-    
-    const config = statusMap[status as keyof typeof statusMap] || statusMap.active;
+  const getStatusBadge = (isActive: boolean) => {
     return (
-      <Badge className={config.className}>
-        {config.label}
+      <Badge className={isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+        {isActive ? 'Ativa' : 'Bloqueada'}
       </Badge>
     );
   };
 
-  const getDaysOverdue = (dueDate?: string) => {
-    if (!dueDate) return 0;
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = today.getTime() - due.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-
-  const filteredCompanies = companies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCompanies = accounts.filter(account => {
+    const matchesSearch = account.name.toLowerCase().includes(searchTerm.toLowerCase());
     let matchesStatus = statusFilter === 'all';
     
-    if (statusFilter === 'overdue') {
-      const daysOverdue = getDaysOverdue(company.subscriptions?.[0]?.due_date);
-      matchesStatus = daysOverdue > 0 && company.status === 'active';
-    } else {
-      matchesStatus = statusFilter === 'all' || company.status === statusFilter;
+    if (statusFilter === 'active') {
+      matchesStatus = account.is_active;
+    } else if (statusFilter === 'blocked') {
+      matchesStatus = !account.is_active;
     }
     
     return matchesSearch && matchesStatus;
-  });
-
-  const overdueCompanies = companies.filter(company => {
-    const daysOverdue = getDaysOverdue(company.subscriptions?.[0]?.due_date);
-    return daysOverdue > 0 && company.status === 'active';
   });
 
   const Header = () => (
@@ -265,11 +136,6 @@ const SuperAdmin = () => {
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-5 w-5" />
-          {overdueCompanies.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {overdueCompanies.length}
-            </span>
-          )}
         </Button>
         
         <Select defaultValue="user">
@@ -342,11 +208,11 @@ const SuperAdmin = () => {
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Em Trial</CardTitle>
+          <CardTitle className="text-sm font-medium">Total de Empresas</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{metrics.trialCompanies}</div>
+          <div className="text-2xl font-bold text-blue-600">{metrics.totalCompanies}</div>
         </CardContent>
       </Card>
       
@@ -372,24 +238,6 @@ const SuperAdmin = () => {
     </div>
   );
 
-  const AlertsSection = () => (
-    overdueCompanies.length > 0 && (
-      <Alert className="mb-8 border-orange-200 bg-orange-50">
-        <AlertTriangle className="h-4 w-4 text-orange-600" />
-        <AlertDescription className="text-orange-800">
-          <div className="flex items-center justify-between">
-            <span>
-              {overdueCompanies.length} empresa{overdueCompanies.length > 1 ? 's' : ''} com pagamento em atraso
-            </span>
-            <Button size="sm" variant="outline" className="ml-4" onClick={() => setActiveTab('companies')}>
-              Ver Detalhes
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-    )
-  );
-
   const CompaniesTable = () => (
     <Card>
       <CardHeader>
@@ -399,85 +247,13 @@ const SuperAdmin = () => {
             <CardDescription>Gerencie todas as contas do sistema</CardDescription>
           </div>
           
-          <Dialog open={isCreateCompanyOpen} onOpenChange={setIsCreateCompanyOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={loading}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Empresa
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Empresa</DialogTitle>
-                <DialogDescription>
-                  Cadastre uma nova empresa no sistema
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Nome da Empresa</Label>
-                  <Input 
-                    id="name" 
-                    value={newCompany.name}
-                    onChange={(e) => setNewCompany({...newCompany, name: e.target.value})}
-                    placeholder="Digite o nome da empresa" 
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input 
-                    id="cnpj" 
-                    value={newCompany.cnpj}
-                    onChange={(e) => setNewCompany({...newCompany, cnpj: e.target.value})}
-                    placeholder="00.000.000/0000-00" 
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={newCompany.email}
-                    onChange={(e) => setNewCompany({...newCompany, email: e.target.value})}
-                    placeholder="contato@empresa.com" 
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="plan">Plano</Label>
-                  <Select value={newCompany.plan_id} onValueChange={(value) => setNewCompany({...newCompany, plan_id: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plans.map(plan => (
-                        <SelectItem key={plan.id} value={plan.id.toString()}>
-                          {plan.name} - R$ {plan.price}/mês
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
-                    id="trial"
-                    checked={newCompany.is_trial}
-                    onChange={(e) => setNewCompany({...newCompany, is_trial: e.target.checked})}
-                  />
-                  <Label htmlFor="trial">Iniciar em trial (30 dias)</Label>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsCreateCompanyOpen(false)} disabled={loading}>
-                  Cancelar
-                </Button>
-                <Button onClick={createCompany} disabled={loading || !newCompany.name || !newCompany.plan_id}>
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Criar Empresa
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            onClick={() => setIsCreateCompanyOpen(true)}
+            disabled={loading || createAccountMutation.isPending}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Empresa
+          </Button>
         </div>
         
         <div className="flex space-x-4 mt-4">
@@ -499,9 +275,7 @@ const SuperAdmin = () => {
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
               <SelectItem value="active">Ativas</SelectItem>
-              <SelectItem value="trial">Trial</SelectItem>
               <SelectItem value="blocked">Bloqueadas</SelectItem>
-              <SelectItem value="overdue">Em Débito</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -512,6 +286,13 @@ const SuperAdmin = () => {
           <div className="flex justify-center items-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
+        ) : error ? (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              Erro ao carregar empresas: {error.message}
+            </AlertDescription>
+          </Alert>
         ) : (
           <div className="rounded-md border">
             <div className="overflow-x-auto">
@@ -519,81 +300,82 @@ const SuperAdmin = () => {
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="text-left p-4 font-medium">Empresa</th>
+                    <th className="text-left p-4 font-medium">Email</th>
                     <th className="text-left p-4 font-medium">CNPJ</th>
                     <th className="text-left p-4 font-medium">Status</th>
                     <th className="text-left p-4 font-medium">Plano</th>
-                    <th className="text-left p-4 font-medium">Vencimento</th>
+                    <th className="text-left p-4 font-medium">Criado em</th>
                     <th className="text-left p-4 font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCompanies.map((company) => {
-                    const subscription = company.subscriptions?.[0];
-                    const daysOverdue = getDaysOverdue(subscription?.due_date);
-                    const status = daysOverdue > 0 && company.status === 'active' ? 'overdue' : company.status;
-                    
-                    return (
-                      <tr key={company.id} className="border-b hover:bg-muted/25">
-                        <td className="p-4">
-                          <div>
-                            <div className="font-medium">{company.name}</div>
-                            {daysOverdue > 0 && company.status === 'active' && (
-                              <div className="text-sm text-red-600">
-                                {daysOverdue} dias em atraso
-                              </div>
-                            )}
+                  {filteredCompanies.map((account) => (
+                    <tr key={account.id} className="border-b hover:bg-muted/25">
+                      <td className="p-4">
+                        <div className="font-medium">{account.name}</div>
+                        {account.city && account.state && (
+                          <div className="text-sm text-muted-foreground">
+                            {account.city}, {account.state}
                           </div>
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">{company.cnpj}</td>
-                        <td className="p-4">{getStatusBadge(status)}</td>
-                        <td className="p-4">{company.plans?.name || 'N/A'}</td>
-                        <td className="p-4 text-sm">
-                          {subscription?.due_date ? new Date(subscription.due_date).toLocaleDateString('pt-BR') : 'N/A'}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="ghost" title="Ver detalhes">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" title="Editar">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              title={company.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
-                              onClick={() => toggleCompanyStatus(company.id, company.status)}
-                              className={company.status === 'blocked' ? 'text-green-600' : 'text-red-600'}
-                            >
-                              {company.status === 'blocked' ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              title="Excluir"
-                              onClick={() => deleteCompany(company.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        )}
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">{account.email}</td>
+                      <td className="p-4 text-sm text-muted-foreground">{account.cnpj || 'N/A'}</td>
+                      <td className="p-4">{getStatusBadge(account.is_active)}</td>
+                      <td className="p-4">{account.plan_name || 'N/A'}</td>
+                      <td className="p-4 text-sm">
+                        {new Date(account.created_at).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="ghost" title="Ver detalhes">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" title="Editar">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            title={account.is_active ? 'Bloquear' : 'Desbloquear'}
+                            onClick={() => toggleCompanyStatus(account.id, account.is_active)}
+                            className={account.is_active ? 'text-red-600' : 'text-green-600'}
+                            disabled={updateAccountMutation.isPending}
+                          >
+                            {account.is_active ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            title="Excluir"
+                            onClick={() => deleteCompany(account.id)}
+                            className="text-red-600"
+                            disabled={deleteAccountMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         )}
       </CardContent>
+      
+      <NewAccountDialog
+        open={isCreateCompanyOpen}
+        onOpenChange={setIsCreateCompanyOpen}
+        onSave={handleCreateCompany}
+      />
     </Card>
   );
 
   const DashboardView = () => (
     <div className="space-y-8">
       <MetricsCards />
-      <AlertsSection />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -607,13 +389,13 @@ const SuperAdmin = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {companies.slice(0, 5).map((company) => (
-                  <div key={company.id} className="flex items-center justify-between">
+                {accounts.slice(0, 5).map((account) => (
+                  <div key={account.id} className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium">{company.name}</div>
-                      <div className="text-sm text-muted-foreground">{company.plans?.name || 'N/A'}</div>
+                      <div className="font-medium">{account.name}</div>
+                      <div className="text-sm text-muted-foreground">{account.plan_name || 'N/A'}</div>
                     </div>
-                    {getStatusBadge(company.status)}
+                    {getStatusBadge(account.is_active)}
                   </div>
                 ))}
               </div>
@@ -623,39 +405,26 @@ const SuperAdmin = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Alertas</CardTitle>
+            <CardTitle>Status do Sistema</CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Conexão com Banco</span>
+                <div className="flex items-center space-x-2">
+                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-green-600">Online</span>
+                </div>
               </div>
-            ) : overdueCompanies.length > 0 ? (
-              <div className="space-y-3">
-                {overdueCompanies.map((company) => {
-                  const daysOverdue = getDaysOverdue(company.subscriptions?.[0]?.due_date);
-                  return (
-                    <div key={company.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <div>
-                        <div className="font-medium text-red-900">{company.name}</div>
-                        <div className="text-sm text-red-700">{daysOverdue} dias em atraso</div>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => toggleCompanyStatus(company.id, company.status)}
-                      >
-                        Bloquear
-                      </Button>
-                    </div>
-                  );
-                })}
+              <div className="flex items-center justify-between">
+                <span>Total de Empresas</span>
+                <span className="font-medium">{metrics.totalCompanies}</span>
               </div>
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                Nenhum alerta no momento
+              <div className="flex items-center justify-between">
+                <span>Empresas Ativas</span>
+                <span className="font-medium text-green-600">{metrics.activeCompanies}</span>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -664,29 +433,6 @@ const SuperAdmin = () => {
 
   const SettingsView = () => (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Planos Disponíveis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {plans.map(plan => (
-                <div key={plan.id} className="p-4 border rounded-lg">
-                  <h4 className="font-medium">{plan.name}</h4>
-                  <p className="text-2xl font-bold">R$ {plan.price}</p>
-                  <p className="text-sm text-muted-foreground">por mês</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
       <Card>
         <CardHeader>
           <CardTitle>Configurações do Sistema</CardTitle>
@@ -710,7 +456,7 @@ const SuperAdmin = () => {
     </div>
   );
 
-  if (loading && companies.length === 0) {
+  if (loading && accounts.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
