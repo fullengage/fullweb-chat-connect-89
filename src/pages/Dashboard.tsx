@@ -2,29 +2,50 @@
 import { useState } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
-import { DashboardHeader } from "@/components/DashboardHeader"
-import { DashboardFilters } from "@/components/DashboardFilters"
-import { DashboardTabs } from "@/components/DashboardTabs"
-import { DashboardEmptyState } from "@/components/DashboardEmptyState"
 import { useConversations, useUsers, useInboxes, useUpdateConversationStatus } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
 import { ConversationForStats, Conversation } from "@/types"
+import { ChatArea } from "@/components/inbox/ChatArea"
+import { ConversationsSidebar } from "@/components/inbox/ConversationsSidebar"
+import { useAuth } from "@/contexts/AuthContext"
+import { supabase } from "@/integrations/supabase/client"
+import { useEffect } from "react"
 
 export default function Dashboard() {
   const [accountId, setAccountId] = useState("1")
-  const [status, setStatus] = useState("all")
-  const [assigneeId, setAssigneeId] = useState("all")
-  const [inboxId, setInboxId] = useState("all")
-  const [activeTab, setActiveTab] = useState("overview")
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const { user: authUser } = useAuth()
   const { toast } = useToast()
 
   const accountIdNumber = accountId ? parseInt(accountId) : 1
 
+  // Fetch current user data
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (!authUser) return
+
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching user data:', error)
+        return
+      }
+
+      setCurrentUser(userData)
+    }
+
+    fetchCurrentUser()
+  }, [authUser])
+
   // Build filters object
   const filters = {
     account_id: accountIdNumber,
-    ...(status !== "all" && { status }),
-    ...(assigneeId !== "all" && assigneeId !== "unassigned" && { assignee_id: assigneeId }),
   }
 
   const {
@@ -46,10 +67,6 @@ export default function Dashboard() {
 
   const updateStatus = useUpdateConversationStatus()
 
-  // ✅ Log de debug para Dashboard
-  console.log('Dashboard - Raw agents data:', agents)
-  console.log('Dashboard - agents.length:', agents?.length)
-
   const handleRefresh = () => {
     refetchConversations()
     toast({
@@ -58,100 +75,50 @@ export default function Dashboard() {
     })
   }
 
-  const handleKanbanStatusChange = async (conversationId: number, newStatus: string) => {
-    try {
-      await updateStatus.mutateAsync({ conversationId, status: newStatus })
-      
-      // Atualizar dados para refletir mudança
-      refetchConversations()
-      
-      toast({
-        title: "Status atualizado",
-        description: `Conversa movida para ${newStatus}`,
-        variant: "default",
-      })
-    } catch (error) {
-      console.error('Error updating conversation status:', error)
-      toast({
-        title: "Erro ao atualizar status",
-        description: "Não foi possível atualizar o status da conversa",
-        variant: "destructive",
-      })
-    }
+  const handleToggleDetails = () => {
+    setShowDetailsPanel(!showDetailsPanel)
   }
 
-  const filteredConversations = conversations.filter((conversation: Conversation) => {
-    if (assigneeId === "unassigned") {
-      return !conversation.assignee
-    }
-    return true
-  })
-
-  // Convert conversations to the format expected by components
-  const conversationsForStats: ConversationForStats[] = filteredConversations.map((conv: Conversation) => ({
-    id: conv.id,
-    status: conv.status,
-    unread_count: conv.unread_count || 0,
-    contact: {
-      id: conv.contact?.id || 0,
-      name: conv.contact?.name || 'Contato Desconhecido',
-      email: conv.contact?.email,
-      phone: conv.contact?.phone,
-      avatar_url: conv.contact?.avatar_url
-    },
-    assignee: conv.assignee ? {
-      id: conv.assignee.id,
-      name: conv.assignee.name,
-      avatar_url: conv.assignee.avatar_url
-    } : undefined,
-    inbox: {
-      id: 1, // Mock inbox id since we don't have inbox_id in conversations table
-      name: 'Inbox Padrão',
-      channel_type: 'webchat'
-    },
-    updated_at: conv.updated_at,
-    messages: conv.messages || []
-  }))
+  if (!currentUser) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Carregando dados do usuário...</p>
+            </div>
+          </div>
+        </div>
+      </SidebarProvider>
+    )
+  }
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset>
-          <div className="flex-1 space-y-6 p-6">
-            <DashboardHeader 
-              onRefresh={handleRefresh}
+          <div className="flex h-screen">
+            {/* Conversations Sidebar */}
+            <ConversationsSidebar
+              conversations={conversations}
+              selectedConversation={selectedConversation}
+              onSelectConversation={setSelectedConversation}
               isLoading={conversationsLoading}
+              onRefresh={handleRefresh}
             />
 
-            <DashboardFilters
-              status={status}
-              assigneeId={assigneeId}
-              inboxId={inboxId}
-              accountId={accountId}
-              onStatusChange={setStatus}
-              onAssigneeChange={setAssigneeId}
-              onInboxChange={setInboxId}
-              onAccountIdChange={setAccountId}
+            {/* Main Chat Area */}
+            <ChatArea
+              conversation={selectedConversation}
+              currentUser={currentUser}
               agents={agents}
-              inboxes={inboxes}
-              agentsLoading={agentsLoading}
-              inboxesLoading={inboxesLoading}
+              onToggleDetails={handleToggleDetails}
+              showDetailsPanel={showDetailsPanel}
+              onRefreshConversations={refetchConversations}
             />
-
-            {accountIdNumber > 0 ? (
-              <DashboardTabs
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                accountId={accountIdNumber}
-                inboxId={inboxId}
-                conversationsForStats={conversationsForStats}
-                conversationsLoading={conversationsLoading}
-                onKanbanStatusChange={handleKanbanStatusChange}
-              />
-            ) : (
-              <DashboardEmptyState />
-            )}
           </div>
         </SidebarInset>
       </div>
