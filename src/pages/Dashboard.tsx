@@ -16,6 +16,9 @@ export default function Dashboard() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [showDetailsPanel, setShowDetailsPanel] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [assigneeFilter, setAssigneeFilter] = useState("all")
   const { user: authUser } = useAuth()
   const { toast } = useToast()
 
@@ -67,6 +70,25 @@ export default function Dashboard() {
 
   const updateStatus = useUpdateConversationStatus()
 
+  // Filter conversations based on search and filters
+  const filteredConversations = conversations.filter(conversation => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
+      conversation.contact?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conversation.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    // Status filter
+    const matchesStatus = statusFilter === "all" || conversation.status === statusFilter
+
+    // Assignee filter
+    const matchesAssignee = assigneeFilter === "all" || 
+      (assigneeFilter === "mine" && conversation.assignee?.id === currentUser?.id) ||
+      (assigneeFilter === "unassigned" && !conversation.assignee?.id) ||
+      conversation.assignee?.id === assigneeFilter
+
+    return matchesSearch && matchesStatus && matchesAssignee
+  })
+
   const handleRefresh = () => {
     refetchConversations()
     toast({
@@ -103,11 +125,18 @@ export default function Dashboard() {
           <div className="flex h-screen">
             {/* Conversations Sidebar */}
             <ConversationsSidebar
-              conversations={conversations}
+              conversations={filteredConversations}
               selectedConversation={selectedConversation}
               onSelectConversation={setSelectedConversation}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              assigneeFilter={assigneeFilter}
+              onAssigneeFilterChange={setAssigneeFilter}
+              agents={agents}
               isLoading={conversationsLoading}
-              onRefresh={handleRefresh}
+              currentUser={currentUser}
             />
 
             {/* Main Chat Area */}
