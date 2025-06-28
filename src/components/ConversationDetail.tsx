@@ -7,7 +7,7 @@ import {
 import { Conversation } from "@/types"
 import { ConversationDetailHeader } from "./ConversationDetailHeader"
 import { ConversationContactInfo } from "./ConversationContactInfo"
-import { ConversationManagementCard } from "./ConversationManagementCard"
+
 import { ConversationMessages } from "./ConversationMessages"
 
 interface Agent {
@@ -42,10 +42,7 @@ export const ConversationDetail = ({
         <div className="flex flex-col h-full mt-6">
           <ConversationContactInfo conversation={conversation} />
           
-          <ConversationManagementCard 
-            conversation={conversation} 
-            agents={agents} 
-          />
+          
 
           <ConversationMessages conversation={conversation} />
         </div>

@@ -1,6 +1,6 @@
-
 import { Button } from "@/components/ui/button"
 import { UserPlus, User } from "lucide-react"
+import { forwardRef } from "react"
 
 interface AssignmentButtonProps {
   currentAssignee?: {
@@ -11,12 +11,14 @@ interface AssignmentButtonProps {
   onClick: () => void
 }
 
-export const AssignmentButton = ({ currentAssignee, onClick }: AssignmentButtonProps) => {
+export const AssignmentButton = forwardRef<HTMLButtonElement, AssignmentButtonProps>(
+  ({ currentAssignee, onClick }, ref) => {
   if (currentAssignee) {
     return (
-      <Button 
-        variant="ghost" 
-        size="sm" 
+      <Button
+        ref={ref}
+        variant="ghost"
+        size="sm"
         className="h-auto p-0 text-left justify-start hover:bg-transparent"
         onClick={onClick}
       >
@@ -29,9 +31,10 @@ export const AssignmentButton = ({ currentAssignee, onClick }: AssignmentButtonP
   }
 
   return (
-    <Button 
-      variant="ghost" 
-      size="sm" 
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="sm"
       className="h-auto p-0 text-left justify-start hover:bg-blue-50 text-blue-600"
       onClick={onClick}
     >
@@ -41,4 +44,6 @@ export const AssignmentButton = ({ currentAssignee, onClick }: AssignmentButtonP
       </div>
     </Button>
   )
-}
+})
+
+AssignmentButton.displayName = "AssignmentButton"

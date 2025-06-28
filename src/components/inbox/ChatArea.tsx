@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { ChatInput } from "@/components/ChatInput"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -35,7 +35,6 @@ export const ChatArea = ({
   showDetailsPanel,
   onRefreshConversations
 }: ChatAreaProps) => {
-  const [message, setMessage] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sendMessageMutation = useSendMessage()
   const { toast } = useToast()
@@ -44,6 +43,33 @@ export const ChatArea = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [conversation?.messages])
+
+  const handleSendMessage = async (content: string) => {
+    if (!content || !currentUser || sendMessageMutation.isPending) return
+
+    try {
+      await sendMessageMutation.mutateAsync({
+        conversation_id: conversation.id,
+        sender_type: 'agent',
+        sender_id: currentUser.id,
+        content: content
+      })
+
+      onRefreshConversations()
+      
+      toast({
+        title: "Mensagem enviada",
+        description: "Sua mensagem foi enviada com sucesso.",
+      })
+    } catch (error) {
+      console.error('Error sending message:', error)
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Não foi possível enviar a mensagem. Tente novamente.",
+        variant: "destructive",
+      })
+    }
+  }
 
   if (!conversation) {
     return (
@@ -127,37 +153,10 @@ export const ChatArea = ({
     }
   }
 
-  const handleSendMessage = async () => {
-    const trimmedMessage = message.trim()
-    if (!trimmedMessage || !currentUser || sendMessageMutation.isPending) return
-
-    try {
-      await sendMessageMutation.mutateAsync({
-        conversation_id: conversation.id,
-        sender_type: 'agent',
-        sender_id: currentUser.id,
-        content: trimmedMessage
-      })
-
-      setMessage("")
-      onRefreshConversations()
-      
-      toast({
-        title: "Mensagem enviada",
-        description: "Sua mensagem foi enviada com sucesso.",
-      })
-    } catch (error) {
-      console.error('Error sending message:', error)
-      toast({
-        title: "Erro ao enviar mensagem",
-        description: "Não foi possível enviar a mensagem. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
+  
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-white h-full">
       {/* Header */}
       <div className="p-3 border-b bg-white">
         <div className="flex items-center justify-between">
@@ -195,39 +194,14 @@ export const ChatArea = ({
       <MessageList 
         conversation={conversation} 
         currentUser={currentUser}
+        className="flex-1 overflow-y-auto"
       />
       <div ref={messagesEndRef} />
 
-      {/* Message Input */}
-      <div className="p-4 border-t bg-white">
-        <div className="flex items-center space-x-3">
-          <Input
-            placeholder="Digite sua mensagem..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSendMessage()
-              }
-            }}
-            className="flex-1"
-            disabled={sendMessageMutation.isPending}
-          />
-          <Button 
-            size="sm" 
-            className="bg-purple-600 hover:bg-purple-700"
-            onClick={handleSendMessage}
-            disabled={!message.trim() || sendMessageMutation.isPending}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-        {sendMessageMutation.isPending && (
-          <div className="text-xs text-gray-500 mt-1">
-            Enviando mensagem...
-          </div>
-        )}
-      </div>
+      <ChatInput 
+        onSendMessage={handleSendMessage}
+        isLoading={sendMessageMutation.isPending}
+      />
     </div>
   )
 }
