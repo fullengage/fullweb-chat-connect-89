@@ -44,12 +44,27 @@ export const ConversationAssignment = ({
   const { toast } = useToast()
 
   console.log('ConversationAssignment props:', { conversationId, currentAssignee, agents: agents?.length })
-  console.log('Agents data:', agents?.map(a => ({ id: a.id, name: a.name, hasValidId: Boolean(a.id && a.id.trim()) })))
-
-  // Filter agents to only include those with valid, non-empty IDs
-  const validAgents = agents?.filter(agent => agent.id && agent.id.trim() !== '') || []
+  console.log('Raw agents data:', agents)
   
-  console.log('Valid agents count:', validAgents.length)
+  // More rigorous filtering for valid agents
+  const validAgents = agents?.filter(agent => {
+    const isValid = agent && 
+                   agent.id && 
+                   typeof agent.id === 'string' && 
+                   agent.id.trim() !== '' && 
+                   agent.name && 
+                   typeof agent.name === 'string' && 
+                   agent.name.trim() !== ''
+    
+    console.log('Agent validation:', { 
+      agent: { id: agent?.id, name: agent?.name }, 
+      isValid 
+    })
+    
+    return isValid
+  }) || []
+  
+  console.log('Valid agents after filtering:', validAgents)
 
   const handleAssign = async () => {
     if (!selectedAgentId) {
@@ -168,11 +183,14 @@ export const ConversationAssignment = ({
                   <SelectValue placeholder="Selecionar agente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {validAgents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} ({agent.email})
-                    </SelectItem>
-                  ))}
+                  {validAgents.map((agent) => {
+                    console.log('Rendering SelectItem for agent:', agent.id, agent.name)
+                    return (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name} ({agent.email || 'sem email'})
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -228,11 +246,14 @@ export const ConversationAssignment = ({
                 <SelectValue placeholder="Escolher agente" />
               </SelectTrigger>
               <SelectContent>
-                {validAgents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.name} ({agent.email})
-                  </SelectItem>
-                ))}
+                {validAgents.map((agent) => {
+                  console.log('Rendering SelectItem for agent:', agent.id, agent.name)
+                  return (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name} ({agent.email || 'sem email'})
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
