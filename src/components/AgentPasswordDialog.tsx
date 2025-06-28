@@ -69,12 +69,15 @@ export const AgentPasswordDialog = ({ agent, open, onOpenChange }: AgentPassword
     setIsLoading(true);
 
     try {
+      // Store agent reference to ensure type safety
+      const currentAgent = agent;
+      
       // Buscar usuário autenticado pelo email
       const { data: users, error: searchError } = await supabase.auth.admin.listUsers();
       
       if (searchError) throw searchError;
 
-      const existingUser = users.users.find(user => user.email === agent.email);
+      const existingUser = users.users.find(user => user.email === currentAgent.email);
 
       if (existingUser) {
         // Atualizar senha do usuário existente
@@ -87,17 +90,17 @@ export const AgentPasswordDialog = ({ agent, open, onOpenChange }: AgentPassword
 
         toast({
           title: "Senha atualizada",
-          description: `A senha do agente ${agent.name} foi atualizada com sucesso.`,
+          description: `A senha do agente ${currentAgent.name} foi atualizada com sucesso.`,
         });
       } else {
         // Criar novo usuário autenticado
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: agent.email,
+          email: currentAgent.email,
           password,
           email_confirm: true,
           user_metadata: {
-            name: agent.name,
-            role: agent.role
+            name: currentAgent.name,
+            role: currentAgent.role
           }
         });
 
@@ -108,11 +111,11 @@ export const AgentPasswordDialog = ({ agent, open, onOpenChange }: AgentPassword
           .from('users')
           .upsert({
             auth_user_id: authData.user.id,
-            account_id: agent.account_id,
-            name: agent.name,
-            email: agent.email,
-            phone: agent.phone,
-            role: agent.role,
+            account_id: currentAgent.account_id,
+            name: currentAgent.name,
+            email: currentAgent.email,
+            phone: currentAgent.phone,
+            role: currentAgent.role,
             isactive: true
           });
 
@@ -122,7 +125,7 @@ export const AgentPasswordDialog = ({ agent, open, onOpenChange }: AgentPassword
 
         toast({
           title: "Conta criada",
-          description: `Conta de login criada para ${agent.name} com sucesso.`,
+          description: `Conta de login criada para ${currentAgent.name} com sucesso.`,
         });
       }
 
