@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp, UsersRound, MessageCircle } from "lucide-react";
+import { Bot, BarChart3, MessageSquare, Users, Inbox, Home, Mail, TrendingUp, UsersRound, MessageCircle, Kanban } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
@@ -25,9 +26,9 @@ const menuItems = [
     icon: BarChart3,
   },
   {
-    title: "Chat",
-    url: "/chat",
-    icon: MessageCircle,
+    title: "Kanban",
+    url: "/kanban",
+    icon: Kanban,
   },
   {
     title: "Conversas",

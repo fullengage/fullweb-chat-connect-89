@@ -8,7 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Landing from "@/pages/Landing";
 import Conversations from "@/pages/Conversations";
 import Analytics from "@/pages/Analytics";
-import ChatArea from "@/pages/ChatArea";
+import Kanban from "@/pages/Kanban";
 import Email from "@/pages/Email";
 import Contacts from "@/pages/Contacts";
 import Agents from "@/pages/Agents";
@@ -56,18 +56,18 @@ function AppRoutes() {
         } 
       />
       <Route 
-        path="/conversations" 
+        path="/kanban" 
         element={
           <ProtectedRoute>
-            <Conversations />
+            <Kanban />
           </ProtectedRoute>
         } 
       />
       <Route 
-        path="/chat" 
+        path="/conversations" 
         element={
           <ProtectedRoute>
-            <ChatArea />
+            <Conversations />
           </ProtectedRoute>
         } 
       />
