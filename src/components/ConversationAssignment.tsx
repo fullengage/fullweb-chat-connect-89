@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { 
@@ -45,13 +46,14 @@ export const ConversationAssignment = ({
   console.log('ConversationAssignment props:', { conversationId, currentAssignee, agents: agents?.length })
   console.log('Raw agents data:', agents)
   
-  // Filtração mais rigorosa para agentes válidos
+  // Filtração rigorosa para agentes válidos - aplicando a solução do Select.Item
   const validAgents = agents?.filter(agent => {
     // Verificar se o agente é válido e tem todos os campos obrigatórios
     const hasValidId = agent && 
                       agent.id && 
                       typeof agent.id === 'string' && 
                       agent.id.trim() !== '' &&
+                      agent.id !== "" && // Garantir que não seja string vazia
                       agent.id.length > 10 // UUID deve ter pelo menos 10 caracteres
     
     const hasValidName = agent && 
@@ -83,7 +85,7 @@ export const ConversationAssignment = ({
   console.log('Valid agents after filtering:', validAgents.length, validAgents)
 
   const handleAssign = async () => {
-    if (!selectedAgentId || selectedAgentId.trim() === '') {
+    if (!selectedAgentId || selectedAgentId.trim() === '' || selectedAgentId === "") {
       toast({
         title: "Erro",
         description: "Por favor, selecione um agente válido.",
@@ -200,14 +202,16 @@ export const ConversationAssignment = ({
                   <SelectValue placeholder="Selecionar agente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {validAgents.map((agent) => {
-                    console.log('Rendering SelectItem for agent:', agent.id, agent.name)
-                    return (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name} ({agent.email || 'sem email'})
-                      </SelectItem>
-                    )
-                  })}
+                  {validAgents
+                    .filter(agent => agent.id && agent.id !== "" && agent.id.trim() !== "")
+                    .map((agent) => {
+                      console.log('Rendering SelectItem for agent:', agent.id, agent.name)
+                      return (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name} ({agent.email || 'sem email'})
+                        </SelectItem>
+                      )
+                    })}
                 </SelectContent>
               </Select>
             </div>
@@ -222,7 +226,7 @@ export const ConversationAssignment = ({
               </Button>
               <Button 
                 onClick={handleAssign}
-                disabled={!selectedAgentId || selectedAgentId.trim() === '' || isAssigning}
+                disabled={!selectedAgentId || selectedAgentId.trim() === '' || selectedAgentId === "" || isAssigning}
               >
                 {isAssigning ? "Atribuindo..." : "Reatribuir"}
               </Button>
@@ -263,14 +267,16 @@ export const ConversationAssignment = ({
                 <SelectValue placeholder="Escolher agente" />
               </SelectTrigger>
               <SelectContent>
-                {validAgents.map((agent) => {
-                  console.log('Rendering SelectItem for agent:', agent.id, agent.name)
-                  return (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} ({agent.email || 'sem email'})
-                    </SelectItem>
-                  )
-                })}
+                {validAgents
+                  .filter(agent => agent.id && agent.id !== "" && agent.id.trim() !== "")
+                  .map((agent) => {
+                    console.log('Rendering SelectItem for agent:', agent.id, agent.name)
+                    return (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name} ({agent.email || 'sem email'})
+                      </SelectItem>
+                    )
+                  })}
               </SelectContent>
             </Select>
           </div>
@@ -281,7 +287,7 @@ export const ConversationAssignment = ({
             </Button>
             <Button 
               onClick={handleAssign}
-              disabled={!selectedAgentId || selectedAgentId.trim() === '' || isAssigning}
+              disabled={!selectedAgentId || selectedAgentId.trim() === '' || selectedAgentId === "" || isAssigning}
             >
               {isAssigning ? "Atribuindo..." : "Atribuir"}
             </Button>
