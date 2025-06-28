@@ -135,7 +135,8 @@ export const ChatArea = ({
       await sendMessageMutation.mutateAsync({
         conversation_id: conversation.id,
         sender_type: 'agent',
-        sender_id: currentUser.id,costent: trimmedMessage
+        sender_id: currentUser.id,
+        content: trimmedMessage
       })
 
       setMessage("")
