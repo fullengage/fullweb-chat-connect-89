@@ -570,6 +570,44 @@ export const useSendMessage = () => {
   })
 }
 
+// Hook para atribuir conversa a um agente
+export const useAssignConversation = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async ({ conversationId, assigneeId }: { conversationId: number, assigneeId: string | null }) => {
+      const { data, error } = await supabase
+        .from('conversations')
+        .update({ 
+          assignee_id: assigneeId,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', conversationId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      toast({
+        title: "Atribuição atualizada",
+        description: "A atribuição da conversa foi atualizada com sucesso",
+      })
+    },
+    onError: (error: any) => {
+      console.error('Error updating conversation assignment:', error)
+      toast({
+        title: "Erro ao atualizar atribuição",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
+  })
+}
+
 // Export only the internal types, not Conversation (use the one from types/index.ts)
 export type { 
   Account, 
