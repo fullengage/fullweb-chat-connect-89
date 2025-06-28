@@ -92,7 +92,7 @@ export const ConversationsSidebar = ({
       const lastMessage = conversation.messages[conversation.messages.length - 1]
       return lastMessage.content || 'Nova mensagem'
     }
-    return conversation.subject || 'Nova conversa'
+    return 'Nova conversa'
   }
 
   const stats = {
