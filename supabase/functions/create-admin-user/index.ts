@@ -29,8 +29,28 @@ serve(async (req) => {
     const { email, password, userData } = await req.json()
 
     console.log('Creating admin user with email:', email)
+    console.log('User data:', { ...userData, accountId: userData.accountId })
+
+    // First, check if user with this email already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .single()
+
+    if (existingUser) {
+      console.log('User already exists with email:', email)
+      return new Response(
+        JSON.stringify({ error: 'Usuário com este email já existe' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
 
     // Create auth user first
+    console.log('Creating auth user...')
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email,
       password: password,
@@ -42,9 +62,9 @@ serve(async (req) => {
     })
 
     if (authError) {
-      console.error('Auth error:', authError)
+      console.error('Auth error details:', authError)
       return new Response(
-        JSON.stringify({ error: authError.message }),
+        JSON.stringify({ error: `Erro ao criar usuário de autenticação: ${authError.message}` }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -55,6 +75,7 @@ serve(async (req) => {
     console.log('Auth user created successfully:', authData.user?.id)
 
     // Now create the user record in public.users table
+    console.log('Creating user record...')
     const { data: userRecord, error: userError } = await supabase
       .from('users')
       .insert({
@@ -70,11 +91,13 @@ serve(async (req) => {
       .single()
 
     if (userError) {
-      console.error('User record error:', userError)
+      console.error('User record error details:', userError)
       
       // If user record creation fails, try to delete the auth user
       try {
+        console.log('Cleaning up auth user due to user record error...')
         await supabase.auth.admin.deleteUser(authData.user?.id || '')
+        console.log('Auth user cleaned up successfully')
       } catch (deleteError) {
         console.error('Error cleaning up auth user:', deleteError)
       }
@@ -93,7 +116,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        user: authData.user,
+        message: 'Usuário admin criado com sucesso',
+        user: {
+          id: authData.user?.id,
+          email: authData.user?.email,
+          name: userData.name
+        },
         userRecord: userRecord
       }),
       { 
@@ -103,9 +131,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('Unexpected error details:', error)
     return new Response(
-      JSON.stringify({ error: 'Erro interno do servidor' }),
+      JSON.stringify({ 
+        error: 'Erro interno do servidor',
+        details: error.message 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
