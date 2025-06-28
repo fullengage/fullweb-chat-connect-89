@@ -72,61 +72,70 @@ export const AgentPasswordDialog = ({ agent, open, onOpenChange }: AgentPassword
       // Store agent reference to ensure type safety
       const currentAgent = agent;
       
-      // Buscar usuário autenticado pelo email
-      const { data: users, error: searchError } = await supabase.auth.admin.listUsers();
-      
-      if (searchError) throw searchError;
-
-      const existingUser = users.users.find(user => user.email === currentAgent.email);
-
-      if (existingUser) {
-        // Atualizar senha do usuário existente
-        const { error: updateError } = await supabase.auth.admin.updateUserById(
-          existingUser.id,
-          { password }
-        );
-
-        if (updateError) throw updateError;
-
-        toast({
-          title: "Senha atualizada",
-          description: `A senha do agente ${currentAgent.name} foi atualizada com sucesso.`,
-        });
-      } else {
-        // Criar novo usuário autenticado
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: currentAgent.email,
-          password,
-          email_confirm: true,
-          user_metadata: {
-            name: currentAgent.name,
-            role: currentAgent.role
-          }
-        });
-
-        if (authError) throw authError;
-
-        // Criar registro na tabela users se não existir
-        const { error: userError } = await supabase
-          .from('users')
-          .upsert({
-            auth_user_id: authData.user.id,
-            account_id: currentAgent.account_id,
-            name: currentAgent.name,
-            email: currentAgent.email,
-            phone: currentAgent.phone,
-            role: currentAgent.role,
-            isactive: true
-          });
-
-        if (userError) {
-          console.error('Error creating user record:', userError);
+      // Try to use admin functions - this will fail with anon key
+      try {
+        // Buscar usuário autenticado pelo email
+        const { data: users, error: searchError } = await supabase.auth.admin.listUsers();
+        
+        if (searchError) {
+          // Admin functions require service role key
+          throw new Error("Funcionalidade não disponível: requer permissões de administrador do sistema.");
         }
 
-        toast({
-          title: "Conta criada",
-          description: `Conta de login criada para ${currentAgent.name} com sucesso.`,
-        });
+        const existingUser = users?.users?.find((user: any) => user.email === currentAgent.email);
+
+        if (existingUser) {
+          // Atualizar senha do usuário existente
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
+            existingUser.id,
+            { password }
+          );
+
+          if (updateError) throw updateError;
+
+          toast({
+            title: "Senha atualizada",
+            description: `A senha do agente ${currentAgent.name} foi atualizada com sucesso.`,
+          });
+        } else {
+          // Criar novo usuário autenticado
+          const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email: currentAgent.email,
+            password,
+            email_confirm: true,
+            user_metadata: {
+              name: currentAgent.name,
+              role: currentAgent.role
+            }
+          });
+
+          if (authError) throw authError;
+
+          // Criar registro na tabela users se não existir
+          const { error: userError } = await supabase
+            .from('users')
+            .upsert({
+              auth_user_id: authData.user.id,
+              account_id: currentAgent.account_id,
+              name: currentAgent.name,
+              email: currentAgent.email,
+              phone: currentAgent.phone,
+              role: currentAgent.role,
+              isactive: true
+            });
+
+          if (userError) {
+            console.error('Error creating user record:', userError);
+          }
+
+          toast({
+            title: "Conta criada",
+            description: `Conta de login criada para ${currentAgent.name} com sucesso.`,
+          });
+        }
+      } catch (adminError: any) {
+        // If admin functions fail, show appropriate error
+        throw new Error("Esta funcionalidade requer configuração de chaves de serviço no servidor. Entre em contato com o administrador do sistema.");
       }
 
       setPassword("");
