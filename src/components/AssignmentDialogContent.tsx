@@ -41,7 +41,7 @@ export const AssignmentDialogContent = ({
   onClose
 }: AssignmentDialogContentProps) => {
   
-  // ✅ Função robusta para renderizar SelectItems
+  // ✅ Função super rigorosa para renderizar SelectItems
   const renderSelectItems = () => {
     console.log('🎯 Rendering SelectItems for agents:', validAgents?.length || 0)
     
@@ -54,81 +54,95 @@ export const AssignmentDialogContent = ({
       )
     }
 
-    return validAgents
-      .filter(agent => {
-        // ✅ Validação rigorosa antes de renderizar
-        const isValidForRender = agent && 
-                               agent.id && 
-                               typeof agent.id === 'string' &&
-                               agent.id.trim() !== '' &&
-                               agent.id !== "null" &&
-                               agent.id !== "undefined" &&
-                               agent.id.length >= 10 && // UUIDs são longos
-                               agent.name &&
-                               typeof agent.name === 'string' &&
-                               agent.name.trim() !== ''
+    const filteredAgents = validAgents.filter(agent => {
+      // ✅ Validação extremamente rigorosa
+      if (!agent || typeof agent !== 'object') {
+        console.warn('⚠️ Agent is not an object:', agent)
+        return false
+      }
 
-        if (!isValidForRender) {
-          console.warn('⚠️ Agent filtered out at render time:', {
-            id: agent?.id,
-            name: agent?.name,
-            hasId: !!agent?.id,
-            idType: typeof agent?.id,
-            idLength: agent?.id?.length,
-            hasName: !!agent?.name,
-            nameType: typeof agent?.name
-          })
-        }
-        
-        return isValidForRender
+      if (!agent.id || typeof agent.id !== 'string') {
+        console.warn('⚠️ Agent ID is not a valid string:', agent.id)
+        return false
+      }
+
+      const trimmedId = agent.id.trim()
+      if (trimmedId === '' || trimmedId === 'null' || trimmedId === 'undefined') {
+        console.warn('⚠️ Agent ID is empty or invalid after trim:', trimmedId)
+        return false
+      }
+
+      if (trimmedId.length < 10) {
+        console.warn('⚠️ Agent ID is too short (should be UUID):', trimmedId)
+        return false
+      }
+
+      if (!agent.name || typeof agent.name !== 'string' || agent.name.trim() === '') {
+        console.warn('⚠️ Agent name is invalid:', agent.name)
+        return false
+      }
+
+      return true
+    })
+
+    console.log(`✅ Filtered ${validAgents.length} agents to ${filteredAgents.length} valid agents`)
+
+    if (filteredAgents.length === 0) {
+      return (
+        <SelectItem value="no-valid-agents" disabled>
+          Nenhum agente válido disponível
+        </SelectItem>
+      )
+    }
+
+    return filteredAgents.map((agent) => {
+      const agentId = agent.id.trim()
+      const agentName = agent.name.trim()
+      const agentEmail = agent.email?.trim() || 'sem email'
+      
+      console.log('✅ Rendering SelectItem:', { 
+        id: agentId, 
+        name: agentName,
+        email: agentEmail.substring(0, 15) + '...'
       })
-      .map((agent) => {
-        console.log('✅ Rendering SelectItem for agent:', { 
-          id: agent.id, 
-          name: agent.name,
-          email: agent.email?.substring(0, 10) + '...'
-        })
-        
-        // ✅ Validação final antes de criar o SelectItem
-        if (!agent.id || agent.id.trim() === '') {
-          console.error('❌ CRITICAL: About to render SelectItem with empty value!', agent)
-          return null
-        }
-        
-        return (
-          <SelectItem key={`agent-${agent.id}`} value={agent.id}>
-            {agent.name} ({agent.email || 'sem email'})
-          </SelectItem>
-        )
-      })
-      .filter(Boolean) // Remove nulls
+      
+      return (
+        <SelectItem key={`agent-${agentId}`} value={agentId}>
+          <div className="flex flex-col">
+            <span className="font-medium">{agentName}</span>
+            <span className="text-sm text-gray-500">{agentEmail}</span>
+          </div>
+        </SelectItem>
+      )
+    })
   }
 
   // ✅ Validação se pode atribuir
   const canAssign = () => {
-    return selectedAgentId && 
-           selectedAgentId !== "none" && 
-           selectedAgentId !== "no-agents" &&
-           selectedAgentId.trim() !== '' && 
-           selectedAgentId !== "" && 
-           !isAssigning
+    if (!selectedAgentId || isAssigning) return false
+    if (selectedAgentId === "none" || selectedAgentId === "no-agents" || selectedAgentId === "no-valid-agents") return false
+    if (selectedAgentId.trim() === '' || selectedAgentId.trim().length < 10) return false
+    return true
   }
 
   if (currentAssignee) {
     return (
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Gerenciar Atribuição</DialogTitle>
           <DialogDescription>
-            Esta conversa está atribuída a {currentAssignee.name}. Você pode reatribuir ou remover a atribuição.
+            Esta conversa está atribuída a <strong>{currentAssignee.name}</strong>. 
+            Você pode reatribuir ou remover a atribuição.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Reatribuir para:</label>
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Reatribuir para:
+            </label>
             <Select value={selectedAgentId} onValueChange={onSelectedAgentIdChange}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecionar agente" />
               </SelectTrigger>
               <SelectContent>
@@ -137,17 +151,19 @@ export const AssignmentDialogContent = ({
             </Select>
           </div>
 
-          <div className="flex justify-between space-x-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               variant="outline" 
               onClick={onUnassign}
               disabled={isAssigning}
+              className="flex-1"
             >
               {isAssigning ? "Removendo..." : "Remover Atribuição"}
             </Button>
             <Button 
               onClick={onAssign}
               disabled={!canAssign()}
+              className="flex-1"
             >
               {isAssigning ? "Atribuindo..." : "Reatribuir"}
             </Button>
@@ -158,7 +174,7 @@ export const AssignmentDialogContent = ({
   }
 
   return (
-    <DialogContent>
+    <DialogContent className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Atribuir Conversa</DialogTitle>
         <DialogDescription>
@@ -166,11 +182,13 @@ export const AssignmentDialogContent = ({
         </DialogDescription>
       </DialogHeader>
       
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Selecionar agente:</label>
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Selecionar agente:
+          </label>
           <Select value={selectedAgentId} onValueChange={onSelectedAgentIdChange}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Escolher agente" />
             </SelectTrigger>
             <SelectContent>
@@ -179,13 +197,18 @@ export const AssignmentDialogContent = ({
           </Select>
         </div>
 
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            className="flex-1"
+          >
             Cancelar
           </Button>
           <Button 
             onClick={onAssign}
             disabled={!canAssign()}
+            className="flex-1"
           >
             {isAssigning ? "Atribuindo..." : "Atribuir"}
           </Button>
