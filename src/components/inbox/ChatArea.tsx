@@ -1,28 +1,23 @@
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { 
   Send, 
-  Paperclip, 
-  Smile, 
-  MoreVertical, 
-  Info, 
+  MoreHorizontal, 
+  Phone, 
+  Video, 
+  Info,
+  Lock,
   UserPlus,
-  MessageSquare,
-  Clock,
-  CheckCircle2,
-  User
+  AlertTriangle
 } from "lucide-react"
-import { Conversation, Message } from "@/types"
-import { useSendMessage } from "@/hooks/useSupabaseData"
-import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
-import { formatDistanceToNow, format } from "date-fns"
+import { Conversation } from "@/types"
+import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { ConversationAssignment } from "@/components/ConversationAssignment"
 
 interface ChatAreaProps {
   conversation: Conversation | null
@@ -42,272 +37,205 @@ export const ChatArea = ({
   onRefreshConversations
 }: ChatAreaProps) => {
   const [message, setMessage] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const sendMessageMutation = useSendMessage()
-  const { toast } = useToast()
-
-  // Auto scroll to bottom when new messages arrive
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  useEffect(() => {
-    if (conversation?.messages) {
-      scrollToBottom()
-    }
-  }, [conversation?.messages])
-
-  // Handle message sending
-  const handleSendMessage = async () => {
-    if (!message.trim() || !conversation || !currentUser) return
-
-    const messageContent = message.trim()
-    setMessage("")
-    setIsTyping(false)
-
-    try {
-      await sendMessageMutation.mutateAsync({
-        conversation_id: conversation.id,
-        sender_type: 'agent',
-        sender_id: currentUser.id,
-        content: messageContent
-      })
-
-      onRefreshConversations()
-      
-      toast({
-        title: "Mensagem enviada",
-        description: "Sua mensagem foi enviada com sucesso.",
-      })
-    } catch (error) {
-      console.error('Error sending message:', error)
-      toast({
-        title: "Erro ao enviar mensagem",
-        description: "Não foi possível enviar a mensagem. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Handle keyboard shortcuts
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault()
-      handleSendMessage()
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <MessageSquare className="h-4 w-4 text-green-500" />
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />
-      case 'resolved':
-        return <CheckCircle2 className="h-4 w-4 text-gray-500" />
-      default:
-        return <MessageSquare className="h-4 w-4 text-blue-500" />
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'open': return 'Aberta'
-      case 'pending': return 'Pendente'
-      case 'resolved': return 'Resolvida'
-      default: return status
-    }
-  }
 
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="bg-purple-50 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-            <MessageSquare className="h-12 w-12 text-purple-600" />
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
             Selecione uma conversa
           </h3>
           <p className="text-gray-500">
-            Escolha uma conversa na barra lateral para começar a atender.
+            Escolha uma conversa da lista para começar a conversar
           </p>
         </div>
       </div>
     )
   }
 
+  // ✅ Verificar se conversa tem agente atribuído
+  const hasAssignedAgent = conversation.assignee && conversation.assignee.id
+
+  // ✅ Se não tem agente atribuído, mostrar tela de bloqueio
+  if (!hasAssignedAgent) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-red-50">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-10 w-10 text-red-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-red-900 mb-2">
+            Conversa Bloqueada
+          </h3>
+          <p className="text-red-700 mb-6">
+            Esta conversa precisa ter um agente atribuído antes de poder ser aberta. 
+            Atribua um agente responsável para continuar.
+          </p>
+          
+          <div className="bg-white p-4 rounded-lg border border-red-200 mb-4">
+            <h4 className="font-medium text-gray-900 mb-2">Atribuir Agente:</h4>
+            <ConversationAssignment
+              conversationId={conversation.id}
+              currentAssignee={conversation.assignee}
+              agents={agents}
+              onAssignmentChange={onRefreshConversations}
+            />
+          </div>
+          
+          <div className="flex items-center justify-center space-x-2 text-sm text-red-600">
+            <AlertTriangle className="h-4 w-4" />
+            <span>Atribuição obrigatória para prosseguir</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'bg-green-100 text-green-800'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'resolved':
+        return 'bg-gray-100 text-gray-800'
+      default:
+        return 'bg-blue-100 text-blue-800'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'Aberta'
+      case 'pending':
+        return 'Pendente'
+      case 'resolved':
+        return 'Resolvida'
+      default:
+        return status
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={conversation.contact?.avatar_url} />
-            <AvatarFallback className="bg-purple-100 text-purple-700">
-              {conversation.contact?.name?.charAt(0)?.toUpperCase() || 'C'}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-lg font-semibold text-gray-900">
+      <div className="p-4 border-b bg-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={conversation.contact?.avatar_url} />
+              <AvatarFallback>
+                {conversation.contact?.name?.charAt(0)?.toUpperCase() || 'C'}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div>
+              <h2 className="font-semibold text-gray-900">
                 {conversation.contact?.name || 'Contato Desconhecido'}
               </h2>
-              <MessageSquare className="h-4 w-4 text-green-500" />
-            </div>
-            
-            <div className="flex items-center space-x-3 text-sm text-gray-500">
-              <div className="flex items-center space-x-1">
-                {getStatusIcon(conversation.status)}
-                <span>{getStatusText(conversation.status)}</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">
+                  {conversation.contact?.email || conversation.contact?.phone || 'Sem contato'}
+                </span>
+                <Badge className={`text-xs ${getStatusColor(conversation.status)}`}>
+                  {getStatusText(conversation.status)}
+                </Badge>
               </div>
-              
-              {conversation.assignee && (
-                <div className="flex items-center space-x-1">
-                  <User className="h-3 w-3" />
-                  <span>{conversation.assignee.name}</span>
-                </div>
-              )}
-              
-              <span>#{conversation.id}</span>
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm">
+              <Phone className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Video className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onToggleDetails}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleDetails}
-            className={cn(
-              "text-gray-500 hover:text-gray-700",
-              showDetailsPanel && "bg-gray-100 text-gray-900"
-            )}
-          >
-            <Info className="h-4 w-4" />
-          </Button>
+        {/* Assignee Info */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-500">Atribuído para:</span>
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={conversation.assignee?.avatar_url} />
+                <AvatarFallback className="text-xs">
+                  {conversation.assignee?.name?.charAt(0)?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium text-gray-700">
+                {conversation.assignee?.name}
+              </span>
+            </div>
+          </div>
           
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+          <ConversationAssignment
+            conversationId={conversation.id}
+            currentAssignee={conversation.assignee}
+            agents={agents}
+            onAssignmentChange={onRefreshConversations}
+          />
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {conversation.messages && conversation.messages.length > 0 ? (
-          conversation.messages.map((msg: Message, index: number) => (
-            <div
-              key={msg.id}
-              className={cn(
-                "flex",
-                msg.sender_type === 'agent' ? "justify-end" : "justify-start"
-              )}
-            >
-              <div
-                className={cn(
-                  "max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm",
-                  msg.sender_type === 'agent'
-                    ? "bg-purple-600 text-white"
-                    : "bg-white text-gray-900 border"
-                )}
-              >
-                <p className="text-sm">{msg.content}</p>
-                <div className={cn(
-                  "flex items-center justify-between mt-1 text-xs",
-                  msg.sender_type === 'agent' ? "text-purple-100" : "text-gray-500"
-                )}>
-                  <span>
-                    {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
-                  </span>
-                  {msg.sender_type === 'agent' && (
-                    <CheckCircle2 className="h-3 w-3 ml-2" />
-                  )}
-                </div>
-              </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Mensagem de sistema indicando que a conversa foi desbloqueada */}
+        <div className="flex justify-center">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-w-md">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-green-800">
+                Conversa desbloqueada - Agente {conversation.assignee?.name} atribuído
+              </span>
             </div>
-          ))
-        ) : (
-          <div className="text-center text-gray-500 py-8">
-            <MessageSquare className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-            <p>Nenhuma mensagem ainda</p>
-            <p className="text-sm">Envie a primeira mensagem para iniciar a conversa</p>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Typing Indicator */}
-      {isTyping && (
-        <div className="px-4 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="text-xs text-green-600 mt-1">
+              {format(new Date(conversation.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
             </div>
-            <span>Digitando...</span>
           </div>
         </div>
-      )}
+
+        {/* Placeholder para mensagens futuras */}
+        <div className="text-center text-gray-500 py-8">
+          <p>Nenhuma mensagem ainda. Comece a conversa!</p>
+        </div>
+      </div>
 
       {/* Message Input */}
       <div className="p-4 border-t bg-white">
-        <div className="flex items-end space-x-2">
-          <div className="flex-1">
-            <Textarea
-              ref={textareaRef}
-              placeholder="Digite sua mensagem... (Ctrl+Enter para enviar)"
-              value={message}
-              onChange={(e) => {
-                setMessage(e.target.value)
-                setIsTyping(e.target.value.length > 0)
-              }}
-              onKeyDown={handleKeyDown}
-              className="min-h-[60px] max-h-32 resize-none border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-              disabled={sendMessageMutation.isPending}
-            />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <Smile className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              onClick={handleSendMessage}
-              disabled={!message.trim() || sendMessageMutation.isPending}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              {sendMessageMutation.isPending ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-          <span>Ctrl+Enter para enviar</span>
-          {conversation.assignee && (
-            <span>Atribuído a {conversation.assignee.name}</span>
-          )}
+        <div className="flex items-center space-x-2">
+          <Input
+            placeholder="Digite sua mensagem..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                // TODO: Implementar envio de mensagem
+                console.log('Enviar mensagem:', message)
+                setMessage("")
+              }
+            }}
+            className="flex-1"
+          />
+          <Button size="sm">
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>

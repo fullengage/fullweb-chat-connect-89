@@ -1,7 +1,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Clock, MessageCircle, User } from "lucide-react"
+import { Clock, MessageCircle, User, Lock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
 import { Conversation } from "@/types"
@@ -10,6 +10,7 @@ import { useUsers } from "@/hooks/useSupabaseData"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 interface ConversationCardProps {
   conversation: Conversation
@@ -19,6 +20,7 @@ interface ConversationCardProps {
 export const ConversationCard = ({ conversation, onClick }: ConversationCardProps) => {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const { user: authUser } = useAuth()
+  const { toast } = useToast()
 
   // Buscar dados do usuário atual
   useEffect(() => {
@@ -76,14 +78,44 @@ export const ConversationCard = ({ conversation, onClick }: ConversationCardProp
   const handleAssignmentChange = () => {
     // Refresh agents data and trigger parent refresh if needed
     refetchAgents()
-    // You could also call a parent callback here if needed
+  }
+
+  // ✅ Verificar se conversa tem agente atribuído
+  const hasAssignedAgent = conversation.assignee && conversation.assignee.id
+
+  // ✅ Handler para click - bloquear se não tiver agente
+  const handleCardClick = () => {
+    if (!hasAssignedAgent) {
+      toast({
+        title: "Conversa bloqueada",
+        description: "Você deve atribuir um agente à conversa antes de abri-la.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (onClick) {
+      onClick()
+    }
   }
 
   return (
     <div 
-      className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white"
-      onClick={onClick}
+      className={`p-4 border rounded-lg transition-all duration-200 ${
+        hasAssignedAgent 
+          ? 'hover:shadow-md cursor-pointer bg-white' 
+          : 'bg-gray-50 border-gray-300 cursor-not-allowed opacity-75'
+      }`}
+      onClick={handleCardClick}
     >
+      {/* ✅ Indicador de bloqueio */}
+      {!hasAssignedAgent && (
+        <div className="flex items-center space-x-2 mb-2 text-red-600">
+          <Lock className="h-4 w-4" />
+          <span className="text-sm font-medium">Atribuição obrigatória</span>
+        </div>
+      )}
+
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-3">
           <Avatar className="h-10 w-10">

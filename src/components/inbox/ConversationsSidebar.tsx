@@ -1,14 +1,15 @@
 
 import { useState } from "react"
+import { Search, Filter, Users, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Filter, Star, MessageCircle, Clock, CheckCircle, User } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 import { Conversation } from "@/types"
-import { cn } from "@/lib/utils"
-import { formatDistanceToNow } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { ConversationCard } from "@/components/ConversationCard"
+import { User } from "@/hooks/useSupabaseData"
+import { useToast } from "@/hooks/use-toast"
 
 interface ConversationsSidebarProps {
   conversations: Conversation[]
@@ -20,7 +21,7 @@ interface ConversationsSidebarProps {
   onStatusFilterChange: (status: string) => void
   assigneeFilter: string
   onAssigneeFilterChange: (assignee: string) => void
-  agents: any[]
+  agents: User[]
   isLoading: boolean
   currentUser: any
 }
@@ -40,43 +41,60 @@ export const ConversationsSidebar = ({
   currentUser
 }: ConversationsSidebarProps) => {
   const [showFilters, setShowFilters] = useState(false)
+  const { toast } = useToast()
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <MessageCircle className="h-3 w-3 text-green-500" />
-      case 'pending':
-        return <Clock className="h-3 w-3 text-yellow-500" />
-      case 'resolved':
-        return <CheckCircle className="h-3 w-3 text-gray-500" />
-      default:
-        return <MessageCircle className="h-3 w-3 text-blue-500" />
+  // ✅ Handler para seleção de conversa com validação
+  const handleSelectConversation = (conversation: Conversation) => {
+    // Verificar se conversa tem agente atribuído
+    const hasAssignedAgent = conversation.assignee && conversation.assignee.id
+    
+    if (!hasAssignedAgent) {
+      toast({
+        title: "Conversa bloqueada",
+        description: "Esta conversa precisa ter um agente atribuído antes de ser aberta.",
+        variant: "destructive",
+      })
+      return
     }
+    
+    onSelectConversation(conversation)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-green-100 text-green-800'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'resolved':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-blue-100 text-blue-800'
+  const getStatusStats = () => {
+    const stats = {
+      total: conversations.length,
+      open: conversations.filter(c => c.status === 'open').length,
+      pending: conversations.filter(c => c.status === 'pending').length,
+      resolved: conversations.filter(c => c.status === 'resolved').length,
+      unassigned: conversations.filter(c => !c.assignee?.id).length
     }
+    return stats
   }
 
-  const getLastMessage = (conversation: Conversation) => {
-    if (!conversation.messages || conversation.messages.length === 0) {
-      return "Sem mensagens"
-    }
-    const lastMessage = conversation.messages[conversation.messages.length - 1]
-    return lastMessage.content?.substring(0, 50) + (lastMessage.content && lastMessage.content.length > 50 ? '...' : '')
-  }
+  const stats = getStatusStats()
 
-  const getUnreadCount = (conversation: Conversation) => {
-    return conversation.unread_count || 0
+  if (isLoading) {
+    return (
+      <div className="w-80 border-r bg-white">
+        <div className="p-4 border-b">
+          <div className="h-6 bg-gray-200 rounded mb-3 animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="p-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="mb-3 p-3 border rounded-lg animate-pulse">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -84,12 +102,11 @@ export const ConversationsSidebar = ({
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+          <h2 className="text-lg font-semibold">Conversas</h2>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="text-gray-500 hover:text-gray-700"
           >
             <Filter className="h-4 w-4" />
           </Button>
@@ -99,145 +116,116 @@ export const ConversationsSidebar = ({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Buscar conversa ou contato..."
+            placeholder="Buscar conversas..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9"
+            className="pl-10"
           />
         </div>
 
-        {/* Quick Filters */}
-        <div className="flex gap-2 mt-3 flex-wrap">
-          {[
-            { key: 'all', label: 'Todas', icon: MessageCircle },
-            { key: 'open', label: 'Abertas', icon: MessageCircle },
-            { key: 'mine', label: 'Minhas', icon: User },
-            { key: 'resolved', label: 'Resolvidas', icon: CheckCircle },
-          ].map((filter) => (
-            <Button
-              key={filter.key}
-              variant={statusFilter === filter.key || (filter.key === 'mine' && assigneeFilter === 'mine') ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                if (filter.key === 'mine') {
-                  onAssigneeFilterChange('mine')
-                  onStatusFilterChange('all')
-                } else {
-                  onStatusFilterChange(filter.key)
-                  onAssigneeFilterChange('all')
-                }
-              }}
-              className="text-xs"
-            >
-              <filter.icon className="h-3 w-3 mr-1" />
-              {filter.label}
-            </Button>
-          ))}
+        {/* Stats */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-sm font-medium text-gray-900">{stats.total}</div>
+            <div className="text-xs text-gray-500">Total</div>
+          </div>
+          <div className="text-center p-2 bg-red-50 rounded">
+            <div className="text-sm font-medium text-red-900">{stats.unassigned}</div>
+            <div className="text-xs text-red-600">Não atribuídas</div>
+          </div>
         </div>
       </div>
 
+      {/* Filters */}
+      {showFilters && (
+        <div className="p-4 border-b bg-gray-50">
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Status</label>
+              <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="open">Abertas</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="resolved">Resolvidas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Responsável</label>
+              <Select value={assigneeFilter} onValueChange={onAssigneeFilterChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="mine">Minhas conversas</SelectItem>
+                  <SelectItem value="unassigned">Não atribuídas</SelectItem>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="p-4 space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : conversations.length === 0 ? (
+        {conversations.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            <MessageCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+            <div className="mb-4">
+              <AlertCircle className="h-12 w-12 mx-auto text-gray-300" />
+            </div>
             <p>Nenhuma conversa encontrada</p>
           </div>
         ) : (
-          <div className="divide-y">
-            {conversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                onClick={() => onSelectConversation(conversation)}
-                className={cn(
-                  "p-4 cursor-pointer hover:bg-gray-50 transition-colors",
-                  selectedConversation?.id === conversation.id && "bg-blue-50 border-r-2 border-blue-500"
-                )}
-              >
-                <div className="flex items-start space-x-3">
-                  {/* Avatar */}
-                  <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={conversation.contact?.avatar_url} />
-                      <AvatarFallback className="bg-purple-100 text-purple-700">
-                        {conversation.contact?.name?.charAt(0)?.toUpperCase() || 'C'}
-                      </AvatarFallback>
-                    </Avatar>
-                    {/* Channel indicator */}
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <MessageCircle className="h-2 w-2 text-white" />
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
-                        {conversation.contact?.name || 'Contato Desconhecido'}
-                      </h3>
-                      <div className="flex items-center space-x-1">
-                        {getStatusIcon(conversation.status)}
-                        {getUnreadCount(conversation) > 0 && (
-                          <Badge variant="destructive" className="text-xs px-1.5 py-0.5 min-w-[1.25rem] h-5">
-                            {getUnreadCount(conversation)}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-gray-500 truncate mb-1">
-                      {getLastMessage(conversation)}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Badge className={cn("text-xs px-2 py-0.5", getStatusColor(conversation.status))}>
-                          {conversation.status === 'open' ? 'Aberta' : 
-                           conversation.status === 'pending' ? 'Pendente' : 'Resolvida'}
-                        </Badge>
-                        
-                        {conversation.assignee && (
-                          <div className="flex items-center space-x-1">
-                            <Avatar className="h-4 w-4">
-                              <AvatarImage src={conversation.assignee.avatar_url} />
-                              <AvatarFallback className="text-xs">
-                                {conversation.assignee.name?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs text-gray-500 truncate max-w-20">
-                              {conversation.assignee.name}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <span className="text-xs text-gray-400">
-                        {formatDistanceToNow(new Date(conversation.updated_at), { 
-                          addSuffix: true, 
-                          locale: ptBR 
-                        })}
-                      </span>
-                    </div>
-                  </div>
+          <div className="p-2">
+            {conversations.map((conversation) => {
+              const hasAssignedAgent = conversation.assignee && conversation.assignee.id
+              const isSelected = selectedConversation?.id === conversation.id
+              
+              return (
+                <div
+                  key={conversation.id}
+                  className={`mb-2 rounded-lg transition-colors ${
+                    isSelected
+                      ? 'bg-blue-50 border-blue-200'
+                      : hasAssignedAgent
+                      ? 'hover:bg-gray-50'
+                      : 'bg-red-50 border-red-200'
+                  }`}
+                >
+                  <ConversationCard 
+                    conversation={conversation} 
+                    onClick={() => handleSelectConversation(conversation)}
+                  />
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
+      </div>
+
+      {/* Footer com estatísticas */}
+      <div className="p-4 border-t bg-gray-50">
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <span>{stats.total - stats.unassigned} atribuídas</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <span>{stats.unassigned} bloqueadas</span>
+          </div>
+        </div>
       </div>
     </div>
   )
