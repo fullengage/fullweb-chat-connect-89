@@ -220,6 +220,7 @@ export type Database = {
           contact_id: number
           created_at: string | null
           id: number
+          inbox_id: number | null
           kanban_stage: string | null
           labels: string[] | null
           last_activity_at: string | null
@@ -235,6 +236,7 @@ export type Database = {
           contact_id: number
           created_at?: string | null
           id?: number
+          inbox_id?: number | null
           kanban_stage?: string | null
           labels?: string[] | null
           last_activity_at?: string | null
@@ -250,6 +252,7 @@ export type Database = {
           contact_id?: number
           created_at?: string | null
           id?: number
+          inbox_id?: number | null
           kanban_stage?: string | null
           labels?: string[] | null
           last_activity_at?: string | null
@@ -279,6 +282,92 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inboxes: {
+        Row: {
+          account_id: number
+          channel_type: string
+          created_at: string
+          id: number
+          is_active: boolean | null
+          name: string
+          settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: number
+          channel_type: string
+          created_at?: string
+          id?: never
+          is_active?: boolean | null
+          name: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: number
+          channel_type?: string
+          created_at?: string
+          id?: never
+          is_active?: boolean | null
+          name?: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inboxes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_stages: {
+        Row: {
+          account_id: number
+          color: string | null
+          created_at: string
+          id: number
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: number
+          color?: string | null
+          created_at?: string
+          id?: never
+          name: string
+          position: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: number
+          color?: string | null
+          created_at?: string
+          id?: never
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_stages_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
