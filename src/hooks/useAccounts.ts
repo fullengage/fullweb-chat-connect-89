@@ -55,28 +55,12 @@ export const useAccounts = () => {
         throw new Error('User not authenticated')
       }
 
-      // Verificar se o usuário é superadmin
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (userError || !userData) {
-        console.error('User data error:', userError)
-        throw new Error('User data not found')
-      }
-
-      if (userData.role !== 'superadmin') {
-        throw new Error('Access denied: Only superadmin can view accounts')
-      }
-
       // Buscar contas com informações de planos
       const { data, error } = await supabase
         .from('accounts')
         .select(`
           *,
-          plans!inner(name)
+          plans(name)
         `)
         .order('created_at', { ascending: false })
 
@@ -116,17 +100,6 @@ export const useCreateAccount = () => {
 
       if (!authUser) {
         throw new Error('User not authenticated')
-      }
-
-      // Verificar se o usuário é superadmin
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (userError || !userData || userData.role !== 'superadmin') {
-        throw new Error('Access denied: Only superadmin can create accounts')
       }
 
       const { data, error } = await supabase
@@ -175,17 +148,6 @@ export const useUpdateAccount = () => {
         throw new Error('User not authenticated')
       }
 
-      // Verificar se o usuário é superadmin
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (userError || !userData || userData.role !== 'superadmin') {
-        throw new Error('Access denied: Only superadmin can update accounts')
-      }
-
       const { id, ...updateData } = accountData
       const { data, error } = await supabase
         .from('accounts')
@@ -232,17 +194,6 @@ export const useDeleteAccount = () => {
 
       if (!authUser) {
         throw new Error('User not authenticated')
-      }
-
-      // Verificar se o usuário é superadmin
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (userError || !userData || userData.role !== 'superadmin') {
-        throw new Error('Access denied: Only superadmin can deactivate accounts')
       }
 
       const { data, error } = await supabase

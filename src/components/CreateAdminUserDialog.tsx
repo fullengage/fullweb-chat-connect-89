@@ -89,44 +89,60 @@ export const CreateAdminUserDialog = ({
     setIsLoading(true);
     
     try {
-      // 1. Criar o usuário autenticado no Supabase
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          name: formData.name,
-          role: 'admin'
-        }
-      });
-
-      if (authError) {
-        console.error('Error creating auth user:', authError);
-        throw new Error(`Erro ao criar conta de autenticação: ${authError.message}`);
-      }
-
-      if (!authData.user) {
-        throw new Error('Falha ao criar usuário autenticado');
-      }
-
-      // 2. Criar registro na tabela users
-      const { error: userError } = await supabase
+      console.log('Creating admin user for account:', accountId);
+      
+      // 1. Primeiro, criar registro na tabela users com service role
+      const { data: newUser, error: userError } = await supabase
         .from('users')
         .insert({
-          auth_user_id: authData.user.id,
           account_id: accountId,
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
           role: 'admin',
           isactive: true
-        });
+        })
+        .select()
+        .single();
 
       if (userError) {
         console.error('Error creating user record:', userError);
-        // Se falhar, deletar o usuário autenticado criado
-        await supabase.auth.admin.deleteUser(authData.user.id);
         throw new Error(`Erro ao criar registro do usuário: ${userError.message}`);
+      }
+
+      console.log('User record created:', newUser);
+
+      // 2. Criar o usuário autenticado no Supabase usando service role
+      // Nota: Isso requer service role key - vamos usar uma edge function
+      const { data: authData, error: authError } = await supabase.functions.invoke('create-admin-user', {
+        body: {
+          email: formData.email,
+          password: formData.password,
+          userData: {
+            name: formData.name,
+            role: 'admin',
+            userId: newUser.id
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('Error creating auth user:', authError);
+        // Se falhou ao criar auth user, remover o registro criado
+        await supabase.from('users').delete().eq('id', newUser.id);
+        throw new Error(`Erro ao criar conta de autenticação: ${authError.message}`);
+      }
+
+      // 3. Atualizar o registro do usuário com o auth_user_id
+      if (authData?.user?.id) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ auth_user_id: authData.user.id })
+          .eq('id', newUser.id);
+
+        if (updateError) {
+          console.error('Error updating user with auth_user_id:', updateError);
+        }
       }
 
       toast({
@@ -144,7 +160,7 @@ export const CreateAdminUserDialog = ({
       console.error('Error creating admin user:', error);
       toast({
         title: "Erro ao criar usuário admin",
-        description: error.message,
+        description: error.message || "Erro desconhecido",
         variant: "destructive",
       });
     } finally {
