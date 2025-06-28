@@ -1,30 +1,15 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ConversationCard } from "./ConversationCard"
-import { ConversationDetail } from "./ConversationDetail"
-import { 
-  MessageCircle, 
-  Search, 
-  Filter,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Users
-} from "lucide-react"
+import { MessageCircle } from "lucide-react"
 import { useConversations, useUsers, type User } from "@/hooks/useSupabaseData"
 import { Conversation } from "@/types"
 import { useToast } from "@/hooks/use-toast"
+import { ConversationDetail } from "./ConversationDetail"
+import { ConversationFilters } from "./ConversationFilters"
+import { ConversationTabs } from "./ConversationTabs"
 
 interface ConversationManagementProps {
   accountId: number
@@ -120,17 +105,6 @@ export const ConversationManagement = ({
     return matchesSearch && matchesAssignee
   })
 
-  // Group conversations by status
-  const conversationsByStatus = {
-    open: filteredConversations.filter((c: Conversation) => c.status === 'open'),
-    pending: filteredConversations.filter((c: Conversation) => c.status === 'pending'),
-    resolved: filteredConversations.filter((c: Conversation) => c.status === 'resolved'),
-  }
-
-  const getTabCount = (status: string) => {
-    return conversationsByStatus[status as keyof typeof conversationsByStatus]?.length || 0
-  }
-
   if (conversationsLoading) {
     return (
       <Card>
@@ -183,124 +157,24 @@ export const ConversationManagement = ({
               <Badge variant="outline">{filteredConversations.length} total</Badge>
             </CardTitle>
             
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar conversas..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full sm:w-64"
-                />
-              </div>
-              
-              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrar por responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os responsáveis</SelectItem>
-                  <SelectItem value="unassigned">Não atribuídos</SelectItem>
-                  {agents
-                    .filter(agent => {
-                      // ✅ Verificação antes de renderizar SelectItem
-                      const isValid = agent && 
-                                     agent.id && 
-                                     typeof agent.id === 'string' &&
-                                     agent.id.trim() !== '' &&
-                                     agent.name && 
-                                     agent.name.trim() !== ''
-                      
-                      if (!isValid) {
-                        console.error('ConversationManagement - About to render invalid SelectItem:', agent)
-                      }
-                      
-                      return isValid
-                    })
-                    .map((agent) => {
-                      console.log('ConversationManagement - Rendering SelectItem for agent:', { 
-                        id: agent.id, 
-                        name: agent.name 
-                      })
-                      
-                      return (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </SelectItem>
-                      )
-                    })}
-                </SelectContent>
-              </Select>
-
-              <Button onClick={() => refetchConversations()} variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Atualizar
-              </Button>
-            </div>
+            <ConversationFilters
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              assigneeFilter={assigneeFilter}
+              onAssigneeFilterChange={setAssigneeFilter}
+              agents={agents}
+              onRefresh={refetchConversations}
+            />
           </div>
         </CardHeader>
         
         <CardContent>
-          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all" className="flex items-center space-x-2">
-                <MessageCircle className="h-4 w-4" />
-                <span>Todas</span>
-                <Badge variant="secondary" className="ml-1">
-                  {filteredConversations.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="open" className="flex items-center space-x-2">
-                <Clock className="h-4 w-4" />
-                <span>Abertas</span>
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount('open')}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex items-center space-x-2">
-                <AlertCircle className="h-4 w-4" />
-                <span>Pendentes</span>
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount('pending')}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="resolved" className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4" />
-                <span>Resolvidas</span>
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount('resolved')}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all" className="mt-4">
-              <ConversationList 
-                conversations={filteredConversations}
-                onConversationClick={handleConversationClick}
-              />
-            </TabsContent>
-
-            <TabsContent value="open" className="mt-4">
-              <ConversationList 
-                conversations={conversationsByStatus.open}
-                onConversationClick={handleConversationClick}
-              />
-            </TabsContent>
-
-            <TabsContent value="pending" className="mt-4">
-              <ConversationList 
-                conversations={conversationsByStatus.pending}
-                onConversationClick={handleConversationClick}
-              />
-            </TabsContent>
-
-            <TabsContent value="resolved" className="mt-4">
-              <ConversationList 
-                conversations={conversationsByStatus.resolved}
-                onConversationClick={handleConversationClick}
-              />
-            </TabsContent>
-          </Tabs>
+          <ConversationTabs
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            conversations={filteredConversations}
+            onConversationClick={handleConversationClick}
+          />
         </CardContent>
       </Card>
 
@@ -311,35 +185,5 @@ export const ConversationManagement = ({
         onClose={handleCloseDetail}
       />
     </>
-  )
-}
-
-// Componente auxiliar para renderizar a lista de conversas
-const ConversationList = ({ 
-  conversations, 
-  onConversationClick 
-}: { 
-  conversations: Conversation[], 
-  onConversationClick: (conversation: Conversation) => void 
-}) => {
-  if (conversations.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">Nenhuma conversa encontrada</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {conversations.map((conversation) => (
-        <ConversationCard
-          key={conversation.id}
-          conversation={conversation}
-          onClick={() => onConversationClick(conversation)}
-        />
-      ))}
-    </div>
   )
 }
