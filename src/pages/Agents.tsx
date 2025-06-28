@@ -18,6 +18,7 @@ const Agents = () => {
   const [isNewAgentOpen, setIsNewAgentOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentWithStats | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const { toast } = useToast();
 
   // Use real data from Supabase
@@ -47,6 +48,13 @@ const Agents = () => {
 
   const handleAgentClick = (agent: AgentWithStats) => {
     setSelectedAgent(agent);
+    setEditMode(false);
+    setIsDetailsOpen(true);
+  };
+
+  const handleAgentEdit = (agent: AgentWithStats) => {
+    setSelectedAgent(agent);
+    setEditMode(true);
     setIsDetailsOpen(true);
   };
 
@@ -251,6 +259,7 @@ const Agents = () => {
               roleFilter={roleFilter}
               agents={agents}
               onAgentClick={handleAgentClick}
+              onAgentEdit={handleAgentEdit}
               isLoading={isLoading}
             />
 
@@ -266,6 +275,7 @@ const Agents = () => {
               open={isDetailsOpen}
               onOpenChange={setIsDetailsOpen}
               onSave={handleUpdateAgent}
+              initialEditMode={editMode}
             />
           </div>
         </SidebarInset>

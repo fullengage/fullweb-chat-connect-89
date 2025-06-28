@@ -9,6 +9,7 @@ import type { AgentWithStats } from "@/hooks/useAgents";
 interface AgentCardProps {
   agent: AgentWithStats;
   onClick?: () => void;
+  onEdit?: () => void;
 }
 
 const getRoleBadge = (role: string) => {
@@ -54,13 +55,23 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const AgentCard = ({ agent, onClick }: AgentCardProps) => {
+export const AgentCard = ({ agent, onClick, onEdit }: AgentCardProps) => {
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger onClick if clicking on buttons or dropdowns
     if ((e.target as HTMLElement).closest('button, [role="menuitem"]')) {
       return;
     }
     onClick?.();
+  };
+
+  const handleViewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick?.();
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.();
   };
 
   return (
@@ -89,10 +100,10 @@ export const AgentCard = ({ agent, onClick }: AgentCardProps) => {
           </div>
           
           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleViewClick}>
               <Eye className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleEditClick}>
               <Edit className="h-4 w-4" />
             </Button>
             <DropdownMenu>
@@ -102,11 +113,11 @@ export const AgentCard = ({ agent, onClick }: AgentCardProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleViewClick}>
                   <Eye className="mr-2 h-4 w-4" />
                   Ver detalhes
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleEditClick}>
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
                 </DropdownMenuItem>

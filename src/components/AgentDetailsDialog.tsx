@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +27,27 @@ interface AgentDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (agent: AgentWithStats) => void;
+  initialEditMode?: boolean;
 }
 
-export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentDetailsDialogProps) => {
+export const AgentDetailsDialog = ({ 
+  agent, 
+  open, 
+  onOpenChange, 
+  onSave, 
+  initialEditMode = false 
+}: AgentDetailsDialogProps) => {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<AgentWithStats | null>(null);
+
+  useEffect(() => {
+    if (open && agent) {
+      setEditMode(initialEditMode);
+      if (initialEditMode) {
+        setEditData({ ...agent });
+      }
+    }
+  }, [open, agent, initialEditMode]);
 
   if (!agent) return null;
 
@@ -134,7 +149,7 @@ export const AgentDetailsDialog = ({ agent, open, onOpenChange, onSave }: AgentD
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="info" className="w-full">
+        <Tabs defaultValue={editMode ? "settings" : "info"} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="settings">Configurações</TabsTrigger>

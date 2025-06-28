@@ -1,62 +1,73 @@
 
 import { AgentCard } from "./AgentCard";
-import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AgentWithStats } from "@/hooks/useAgents";
 
 interface AgentsListProps {
   searchTerm: string;
   roleFilter: string;
   agents: AgentWithStats[];
-  onAgentClick?: (agent: AgentWithStats) => void;
-  isLoading?: boolean;
+  onAgentClick: (agent: AgentWithStats) => void;
+  onAgentEdit?: (agent: AgentWithStats) => void;
+  isLoading: boolean;
 }
 
-export const AgentsList = ({ searchTerm, roleFilter, agents, onAgentClick, isLoading }: AgentsListProps) => {
+export const AgentsList = ({ 
+  searchTerm, 
+  roleFilter, 
+  agents, 
+  onAgentClick, 
+  onAgentEdit,
+  isLoading 
+}: AgentsListProps) => {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="p-6 border rounded-lg">
+            <div className="flex items-center space-x-3 mb-4">
+              <Skeleton className="w-12 h-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              {[...Array(4)].map((_, j) => (
+                <div key={j} className="flex justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const filteredAgents = agents.filter(agent => {
     const matchesSearch = 
       agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (agent.phone && agent.phone.includes(searchTerm));
-    
     const matchesRole = roleFilter === "all" || agent.role === roleFilter;
-    
     return matchesSearch && matchesRole;
   });
-
-  if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center animate-pulse">
-          <span className="text-2xl">👥</span>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Carregando agentes...</h3>
-        <p className="text-gray-600">Aguarde enquanto buscamos os dados dos agentes.</p>
-      </div>
-    );
-  }
 
   if (filteredAgents.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-          <span className="text-2xl">👥</span>
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          👥
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum agente encontrado</h3>
-        <p className="text-gray-600 mb-4">
-          {searchTerm 
-            ? `Não encontramos agentes que correspondam à busca "${searchTerm}"`
-            : "Não há agentes com o filtro selecionado"
+        <p className="text-gray-600">
+          {searchTerm || roleFilter !== "all" 
+            ? "Tente ajustar os filtros de busca." 
+            : "Comece criando seu primeiro agente."
           }
         </p>
-        {searchTerm && (
-          <Button 
-            variant="outline" 
-            onClick={() => window.location.reload()}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50"
-          >
-            Limpar filtros
-          </Button>
-        )}
       </div>
     );
   }
@@ -67,12 +78,10 @@ export const AgentsList = ({ searchTerm, roleFilter, agents, onAgentClick, isLoa
         <AgentCard 
           key={agent.id} 
           agent={agent} 
-          onClick={() => onAgentClick?.(agent)}
+          onClick={() => onAgentClick(agent)}
+          onEdit={() => onAgentEdit?.(agent)}
         />
       ))}
     </div>
   );
 };
-
-// Remove the mock data and export the updated type
-export type { AgentWithStats as Agent };
