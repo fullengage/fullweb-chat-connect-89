@@ -1,8 +1,7 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, MoreHorizontal, Star, MessageCircle, Clock, CheckCircle } from "lucide-react";
+import { Eye, Edit, MoreHorizontal, Star, MessageCircle, Clock, CheckCircle, Key } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { AgentWithStats } from "@/hooks/useAgents";
 
@@ -10,6 +9,7 @@ interface AgentCardProps {
   agent: AgentWithStats;
   onClick?: () => void;
   onEdit?: () => void;
+  onSetPassword?: () => void;
 }
 
 const getRoleBadge = (role: string) => {
@@ -55,7 +55,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const AgentCard = ({ agent, onClick, onEdit }: AgentCardProps) => {
+export const AgentCard = ({ agent, onClick, onEdit, onSetPassword }: AgentCardProps) => {
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger onClick if clicking on buttons or dropdowns
     if ((e.target as HTMLElement).closest('button, [role="menuitem"]')) {
@@ -72,6 +72,11 @@ export const AgentCard = ({ agent, onClick, onEdit }: AgentCardProps) => {
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit?.();
+  };
+
+  const handleSetPasswordClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSetPassword?.();
   };
 
   return (
@@ -120,6 +125,10 @@ export const AgentCard = ({ agent, onClick, onEdit }: AgentCardProps) => {
                 <DropdownMenuItem onClick={handleEditClick}>
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSetPasswordClick}>
+                  <Key className="mr-2 h-4 w-4" />
+                  Definir senha
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-red-600">
                   Desativar agente

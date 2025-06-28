@@ -9,6 +9,7 @@ import { AgentStats } from "@/components/AgentStats";
 import { AgentsList } from "@/components/AgentsList";
 import { NewAgentDialog } from "@/components/NewAgentDialog";
 import { AgentDetailsDialog } from "@/components/AgentDetailsDialog";
+import { AgentPasswordDialog } from "@/components/AgentPasswordDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAgents, useUpdateAgent, useCreateAgent, type AgentWithStats } from "@/hooks/useAgents";
 
@@ -18,6 +19,7 @@ const Agents = () => {
   const [isNewAgentOpen, setIsNewAgentOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentWithStats | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const { toast } = useToast();
 
@@ -144,6 +146,11 @@ const Agents = () => {
     );
   }
 
+  const handleSetPassword = (agent: AgentWithStats) => {
+    setSelectedAgent(agent);
+    setIsPasswordOpen(true);
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -260,6 +267,7 @@ const Agents = () => {
               agents={agents}
               onAgentClick={handleAgentClick}
               onAgentEdit={handleAgentEdit}
+              onSetPassword={handleSetPassword}
               isLoading={isLoading}
             />
 
@@ -276,6 +284,12 @@ const Agents = () => {
               onOpenChange={setIsDetailsOpen}
               onSave={handleUpdateAgent}
               initialEditMode={editMode}
+            />
+
+            <AgentPasswordDialog
+              agent={selectedAgent}
+              open={isPasswordOpen}
+              onOpenChange={setIsPasswordOpen}
             />
           </div>
         </SidebarInset>

@@ -9,6 +9,7 @@ interface AgentsListProps {
   agents: AgentWithStats[];
   onAgentClick: (agent: AgentWithStats) => void;
   onAgentEdit?: (agent: AgentWithStats) => void;
+  onSetPassword?: (agent: AgentWithStats) => void;
   isLoading: boolean;
 }
 
@@ -18,6 +19,7 @@ export const AgentsList = ({
   agents, 
   onAgentClick, 
   onAgentEdit,
+  onSetPassword,
   isLoading 
 }: AgentsListProps) => {
   if (isLoading) {
@@ -80,6 +82,7 @@ export const AgentsList = ({
           agent={agent} 
           onClick={() => onAgentClick(agent)}
           onEdit={() => onAgentEdit?.(agent)}
+          onSetPassword={() => onSetPassword?.(agent)}
         />
       ))}
     </div>
