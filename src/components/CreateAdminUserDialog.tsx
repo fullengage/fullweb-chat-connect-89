@@ -91,59 +91,30 @@ export const CreateAdminUserDialog = ({
     try {
       console.log('Creating admin user for account:', accountId);
       
-      // 1. Primeiro, criar registro na tabela users com service role
-      const { data: newUser, error: userError } = await supabase
-        .from('users')
-        .insert({
-          account_id: accountId,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: 'admin',
-          isactive: true
-        })
-        .select()
-        .single();
-
-      if (userError) {
-        console.error('Error creating user record:', userError);
-        throw new Error(`Erro ao criar registro do usuário: ${userError.message}`);
-      }
-
-      console.log('User record created:', newUser);
-
-      // 2. Criar o usuário autenticado no Supabase usando service role
-      // Nota: Isso requer service role key - vamos usar uma edge function
-      const { data: authData, error: authError } = await supabase.functions.invoke('create-admin-user', {
+      // Call the edge function to create the user
+      const { data, error } = await supabase.functions.invoke('create-admin-user', {
         body: {
           email: formData.email,
           password: formData.password,
           userData: {
             name: formData.name,
-            role: 'admin',
-            userId: newUser.id
+            phone: formData.phone,
+            accountId: accountId
           }
         }
       });
 
-      if (authError) {
-        console.error('Error creating auth user:', authError);
-        // Se falhou ao criar auth user, remover o registro criado
-        await supabase.from('users').delete().eq('id', newUser.id);
-        throw new Error(`Erro ao criar conta de autenticação: ${authError.message}`);
+      if (error) {
+        console.error('Error calling edge function:', error);
+        throw new Error(error.message || 'Erro ao criar usuário');
       }
 
-      // 3. Atualizar o registro do usuário com o auth_user_id
-      if (authData?.user?.id) {
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({ auth_user_id: authData.user.id })
-          .eq('id', newUser.id);
-
-        if (updateError) {
-          console.error('Error updating user with auth_user_id:', updateError);
-        }
+      if (!data?.success) {
+        console.error('Edge function returned error:', data?.error);
+        throw new Error(data?.error || 'Erro desconhecido ao criar usuário');
       }
+
+      console.log('Admin user created successfully:', data);
 
       toast({
         title: "Usuário admin criado com sucesso",
