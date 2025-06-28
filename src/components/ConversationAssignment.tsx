@@ -43,8 +43,17 @@ export const ConversationAssignment = ({
   const [isAssigning, setIsAssigning] = useState(false)
   const { toast } = useToast()
 
+  console.log('ConversationAssignment props:', { conversationId, currentAssignee, agents: agents?.length })
+
   const handleAssign = async () => {
-    if (!selectedAgentId) return
+    if (!selectedAgentId) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione um agente.",
+        variant: "destructive",
+      })
+      return
+    }
 
     setIsAssigning(true)
     
@@ -112,6 +121,16 @@ export const ConversationAssignment = ({
     }
   }
 
+  // Verificar se há agentes disponíveis
+  if (!agents || agents.length === 0) {
+    return (
+      <div className="flex items-center space-x-2">
+        <User className="h-3 w-3 text-gray-400" />
+        <span className="text-xs text-gray-400">Nenhum agente disponível</span>
+      </div>
+    )
+  }
+
   if (currentAssignee) {
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -145,7 +164,7 @@ export const ConversationAssignment = ({
                 <SelectContent>
                   {agents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
+                      {agent.name} ({agent.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -158,7 +177,7 @@ export const ConversationAssignment = ({
                 onClick={handleUnassign}
                 disabled={isAssigning}
               >
-                Remover Atribuição
+                {isAssigning ? "Removendo..." : "Remover Atribuição"}
               </Button>
               <Button 
                 onClick={handleAssign}
