@@ -202,78 +202,51 @@ export const DetailsPanel = ({
           </CardContent>
         </Card>
 
-        {/* Conversation Management */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center space-x-2">
-              <MessageSquare className="h-4 w-4" />
-              <span>Gerenciar Conversa</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Status */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">Aberta</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="resolved">Resolvida</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Status */}
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Aberta</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="resolved">Resolvida</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Assignee */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Responsável</label>
-              <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Não atribuído</SelectItem>
-                  {validAgents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Assignee */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Responsável</label>
+            <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Selecionar responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Não atribuído</SelectItem>
+                {validAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Current Status and Priority */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Status atual:</span>
-                <Badge className={cn("text-xs", getStatusColor(conversation.status))}>
-                  {conversation.status === 'open' ? 'Aberta' : 
-                   conversation.status === 'pending' ? 'Pendente' : 'Resolvida'}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Prioridade:</span>
-                <Badge className={cn("text-xs", getPriorityColor(conversation.priority || 'medium'))}>
-                  {conversation.priority === 'high' ? 'Alta' : 
-                   conversation.priority === 'low' ? 'Baixa' : 'Média'}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <Button 
-              onClick={handleSaveChanges}
-              disabled={!hasChanges() || isSaving}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Salvando..." : "Salvar Alterações"}
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Save Button */}
+          <Button 
+            onClick={handleSaveChanges}
+            disabled={!hasChanges() || isSaving}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+            size="sm"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {isSaving ? "Salvando..." : "Salvar Alterações"}
+          </Button>
+        </div>
 
         {/* Quick Actions */}
         <Card>
