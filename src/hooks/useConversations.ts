@@ -88,7 +88,7 @@ export const useConversations = (filters: ConversationFilters) => {
           account_id: userData.account_id 
         })
 
-        // ✅ Construir query com validação - AGORA COM MENSAGENS
+        // ✅ Construir query - As políticas RLS agora filtram automaticamente
         let query = supabase
           .from('conversations')
           .select(`
@@ -107,25 +107,18 @@ export const useConversations = (filters: ConversationFilters) => {
           `)
           .order('updated_at', { ascending: false })
 
-        // Aplicar filtros baseados no papel do usuário
-        if (userData.role === 'superadmin') {
-          // Superadmin pode ver conversas de qualquer conta se especificada
-          if (sanitizedFilters.account_id) {
-            query = query.eq('account_id', sanitizedFilters.account_id)
-            console.log('🔧 Applied superadmin account filter:', sanitizedFilters.account_id)
-          }
+        // ✅ Aplicar apenas filtros de conta para superadmins e admins
+        // Para agentes, as políticas RLS já limitam às conversas atribuídas
+        if (userData.role === 'superadmin' && sanitizedFilters.account_id) {
+          query = query.eq('account_id', sanitizedFilters.account_id)
+          console.log('🔧 Applied superadmin account filter:', sanitizedFilters.account_id)
         } else if (userData.role === 'admin') {
-          // Admin pode ver todas as conversas da sua conta
           query = query.eq('account_id', userData.account_id)
           console.log('🔧 Applied admin account filter:', userData.account_id)
         } else if (userData.role === 'agent') {
-          // Agent só pode ver conversas da sua conta que estão atribuídas a ele ou não atribuídas
-          query = query
-            .eq('account_id', userData.account_id)
-            .or(`assignee_id.eq.${userData.id},assignee_id.is.null`)
-          console.log('🔧 Applied agent filters:', { account_id: userData.account_id, user_id: userData.id })
-        } else {
-          throw new Error('Invalid user role: ' + userData.role)
+          // Para agentes, aplicar filtro de conta mas as RLS policies já limitam às atribuídas
+          query = query.eq('account_id', userData.account_id)
+          console.log('🔧 Applied agent account filter - RLS will filter to assigned conversations')
         }
 
         // Aplicar filtros adicionais
@@ -199,7 +192,7 @@ export const useConversations = (filters: ConversationFilters) => {
         })
 
         console.log('✅ Conversations with messages fetched successfully:', conversationsWithMessages.length)
-        console.log('✅ Sample conversation messages:', conversationsWithMessages[0]?.messages?.length || 0)
+        console.log('✅ User role:', userData.role, '- Conversations returned:', conversationsWithMessages.length)
         return conversationsWithMessages as Conversation[]
         
       } catch (error: any) {

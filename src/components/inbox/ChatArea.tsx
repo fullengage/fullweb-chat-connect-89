@@ -17,6 +17,7 @@ import { ConversationAssignment } from "@/components/ConversationAssignment"
 import { MessageList } from "./MessageList"
 import { useSendMessage } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface ChatAreaProps {
   conversation: Conversation | null
@@ -38,6 +39,7 @@ export const ChatArea = ({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sendMessageMutation = useSendMessage()
   const { toast } = useToast()
+  const { user: authUser } = useAuth()
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -89,11 +91,12 @@ export const ChatArea = ({
     )
   }
 
-  // ✅ Verificar se conversa tem agente atribuído
+  // ✅ Verificar se conversa tem agente atribuído - Apenas para admins/superadmins
   const hasAssignedAgent = conversation.assignee && conversation.assignee.id
+  const isAgent = currentUser?.role === 'agent'
 
-  // ✅ Se não tem agente atribuído, mostrar tela de bloqueio
-  if (!hasAssignedAgent) {
+  // ✅ Se não tem agente atribuído E o usuário não é agente, mostrar tela de bloqueio
+  if (!hasAssignedAgent && !isAgent) {
     return (
       <div className="flex-1 flex items-center justify-center bg-red-50">
         <div className="text-center max-w-md">
@@ -153,8 +156,6 @@ export const ChatArea = ({
     }
   }
 
-  
-
   return (
     <div className="flex-1 flex flex-col bg-white h-full">
       {/* Header */}
@@ -176,6 +177,12 @@ export const ChatArea = ({
                 <Badge className={`text-xs ${getStatusColor(conversation.status)}`}>
                   {getStatusText(conversation.status)}
                 </Badge>
+                {/* ✅ Mostrar indicador de atribuição para admins */}
+                {!isAgent && hasAssignedAgent && (
+                  <span className="text-xs text-green-600">
+                    Atribuída a {conversation.assignee?.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>
