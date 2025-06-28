@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { 
   MessageSquare, 
   Search, 
@@ -20,7 +20,9 @@ import {
   CheckCircle,
   AlertCircle,
   Pause,
-  MoreHorizontal
+  MoreHorizontal,
+  History,
+  UserCircle
 } from "lucide-react"
 import { useConversations, useUsers, useInboxes } from "@/hooks/useSupabaseData"
 import { Conversation, ConversationForStats } from "@/types"
@@ -30,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ConversationStats } from "@/components/ConversationStats"
+import { ConversationHistoryModal } from "@/components/ConversationHistoryModal"
 
 export default function Conversations() {
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -37,6 +40,7 @@ export default function Conversations() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [assigneeFilter, setAssigneeFilter] = useState("all")
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
   const { toast } = useToast()
   const { user: authUser } = useAuth()
 
@@ -204,6 +208,16 @@ export default function Conversations() {
     )
   }
 
+  const handleOpenHistory = (conversation: Conversation) => {
+    setSelectedConversation(conversation)
+    setShowHistoryModal(true)
+  }
+
+  const handleCloseHistory = () => {
+    setShowHistoryModal(false)
+    setSelectedConversation(null)
+  }
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -368,11 +382,14 @@ export default function Conversations() {
                       ) : (
                         <div className="space-y-4">
                           {getConversationsByStatus(status).map((conversation) => (
-                            <Card key={conversation.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                            <Card key={conversation.id} className="hover:shadow-md transition-shadow">
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
                                   <div className="flex items-center space-x-4 flex-1">
-                                    <Avatar className="h-12 w-12">
+                                    <Avatar 
+                                      className="h-12 w-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                                      onClick={() => handleOpenHistory(conversation)}
+                                    >
                                       <AvatarImage src={conversation.contact?.avatar_url} />
                                       <AvatarFallback className="bg-blue-100 text-blue-700 font-medium">
                                         {conversation.contact?.name?.charAt(0).toUpperCase() || 'C'}
@@ -381,7 +398,10 @@ export default function Conversations() {
                                     
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center space-x-2 mb-1">
-                                        <h3 className="font-semibold text-gray-900 truncate">
+                                        <h3 
+                                          className="font-semibold text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                                          onClick={() => handleOpenHistory(conversation)}
+                                        >
                                           {conversation.contact?.name || 'Contato Desconhecido'}
                                         </h3>
                                         <Badge className={`text-xs ${getStatusColor(conversation.status)}`}>
@@ -429,9 +449,23 @@ export default function Conversations() {
                                     </div>
                                   </div>
                                   
-                                  <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleOpenHistory(conversation)}>
+                                        <History className="h-4 w-4 mr-2" />
+                                        Ver Histórico
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleOpenHistory(conversation)}>
+                                        <UserCircle className="h-4 w-4 mr-2" />
+                                        Dados do Cliente
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </CardContent>
                             </Card>
@@ -454,6 +488,13 @@ export default function Conversations() {
           </div>
         </SidebarInset>
       </div>
+
+      {/* History Modal */}
+      <ConversationHistoryModal
+        conversation={selectedConversation}
+        isOpen={showHistoryModal}
+        onClose={handleCloseHistory}
+      />
     </SidebarProvider>
   )
 }
