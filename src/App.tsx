@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,6 +15,7 @@ import Agents from "@/pages/Agents";
 import Teams from "@/pages/Teams";
 import AgentBots from "@/pages/AgentBots";
 import Accounts from "@/pages/Accounts";
+import Inbox from "@/pages/Inbox";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -66,6 +68,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ChatArea />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/inbox" 
+        element={
+          <ProtectedRoute>
+            <Inbox />
           </ProtectedRoute>
         } 
       />
