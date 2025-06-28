@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -14,6 +14,9 @@ import { Conversation } from "@/types"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ConversationAssignment } from "@/components/ConversationAssignment"
+import { MessageList } from "./MessageList"
+import { useSendMessage } from "@/hooks/useSupabaseData"
+import { useToast } from "@/hooks/use-toast"
 
 interface ChatAreaProps {
   conversation: Conversation | null
@@ -33,6 +36,14 @@ export const ChatArea = ({
   onRefreshConversations
 }: ChatAreaProps) => {
   const [message, setMessage] = useState("")
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const sendMessageMutation = useSendMessage()
+  const { toast } = useToast()
+
+  // Auto scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [conversation?.messages])
 
   if (!conversation) {
     return (
@@ -116,9 +127,37 @@ export const ChatArea = ({
     }
   }
 
+  const handleSendMessage = async () => {
+    const trimmedMessage = message.trim()
+    if (!trimmedMessage || !currentUser || sendMessageMutation.isPending) return
+
+    try {
+      await sendMessageMutation.mutateAsync({
+        conversation_id: conversation.id,
+        sender_type: 'agent',
+        sender_id: currentUser.id,costent: trimmedMessage
+      })
+
+      setMessage("")
+      onRefreshConversations()
+      
+      toast({
+        title: "Mensagem enviada",
+        description: "Sua mensagem foi enviada com sucesso.",
+      })
+    } catch (error) {
+      console.error('Error sending message:', error)
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Não foi possível enviar a mensagem. Tente novamente.",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-white">
-      {/* Simplified Header */}
+      {/* Header */}
       <div className="p-3 border-b bg-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -151,31 +190,14 @@ export const ChatArea = ({
         </div>
       </div>
 
-      {/* Messages Area - Now More Prominent */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {/* Mensagem de sistema indicando que a conversa foi desbloqueada */}
-        <div className="flex justify-center">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-w-md">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-green-800">
-                Conversa ativa - Agente {conversation.assignee?.name} responsável
-              </span>
-            </div>
-            <div className="text-xs text-green-600 mt-1">
-              {format(new Date(conversation.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </div>
-          </div>
-        </div>
+      {/* Messages Area */}
+      <MessageList 
+        conversation={conversation} 
+        currentUser={currentUser}
+      />
+      <div ref={messagesEndRef} />
 
-        {/* Área para mensagens futuras */}
-        <div className="text-center text-gray-500 py-12">
-          <p className="text-lg">💬 Pronto para conversar!</p>
-          <p className="text-sm mt-2">Digite sua mensagem abaixo</p>
-        </div>
-      </div>
-
-      {/* Message Input - More Prominent */}
+      {/* Message Input */}
       <div className="p-4 border-t bg-white">
         <div className="flex items-center space-x-3">
           <Input
@@ -184,17 +206,26 @@ export const ChatArea = ({
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                // TODO: Implementar envio de mensagem
-                console.log('Enviar mensagem:', message)
-                setMessage("")
+                handleSendMessage()
               }
             }}
             className="flex-1"
+            disabled={sendMessageMutation.isPending}
           />
-          <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+          <Button 
+            size="sm" 
+            className="bg-purple-600 hover:bg-purple-700"
+            onClick={handleSendMessage}
+            disabled={!message.trim() || sendMessageMutation.isPending}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </div>
+        {sendMessageMutation.isPending && (
+          <div className="text-xs text-gray-500 mt-1">
+            Enviando mensagem...
+          </div>
+        )}
       </div>
     </div>
   )

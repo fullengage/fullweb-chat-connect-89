@@ -88,13 +88,22 @@ export const useConversations = (filters: ConversationFilters) => {
           account_id: userData.account_id 
         })
 
-        // ✅ Construir query com validação
+        // ✅ Construir query com validação - AGORA COM MENSAGENS
         let query = supabase
           .from('conversations')
           .select(`
             *,
             contact:contacts(*),
-            assignee:users(*)
+            assignee:users(*),
+            messages:messages(
+              id,
+              content,
+              sender_type,
+              sender_id,
+              created_at,
+              message_type,
+              status
+            )
           `)
           .order('updated_at', { ascending: false })
 
@@ -170,20 +179,28 @@ export const useConversations = (filters: ConversationFilters) => {
           return []
         }
 
-        // Transform data to include inbox information and calculate unread count
-        const conversationsWithInbox = data.map(conversation => ({
-          ...conversation,
-          inbox: {
-            id: 1,
-            name: 'Chat Interno',
-            channel_type: 'webchat'
-          },
-          messages: [],
-          unread_count: 0
-        }))
+        // Transform data to include inbox information and organize messages
+        const conversationsWithMessages = data.map(conversation => {
+          // Ordenar mensagens por data (mais antiga primeiro)
+          const sortedMessages = (conversation.messages || []).sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          )
 
-        console.log('✅ Conversations fetched successfully:', conversationsWithInbox.length)
-        return conversationsWithInbox as Conversation[]
+          return {
+            ...conversation,
+            inbox: {
+              id: 1,
+              name: 'Chat Interno',
+              channel_type: 'webchat'
+            },
+            messages: sortedMessages,
+            unread_count: 0
+          }
+        })
+
+        console.log('✅ Conversations with messages fetched successfully:', conversationsWithMessages.length)
+        console.log('✅ Sample conversation messages:', conversationsWithMessages[0]?.messages?.length || 0)
+        return conversationsWithMessages as Conversation[]
         
       } catch (error: any) {
         console.error('❌ Error in useConversations:', error)

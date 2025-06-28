@@ -20,17 +20,17 @@ export const DetailsPanel = ({
   onRefreshConversations
 }: DetailsPanelProps) => {
   return (
-    <div className="w-70 border-l bg-white flex flex-col">
+    <div className="w-64 border-l bg-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b">
-        <h3 className="text-base font-semibold text-gray-900">Detalhes</h3>
+      <div className="flex items-center justify-between p-2 border-b">
+        <h3 className="text-sm font-semibold text-gray-900">Detalhes</h3>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
         <ContactInfoCard conversation={conversation} />
         
         <div className="text-center">
