@@ -7,9 +7,10 @@ import { Conversation } from "@/types"
 interface MessageListProps {
   conversation: Conversation
   currentUser: any
+  className?: string
 }
 
-export const MessageList = ({ conversation, currentUser }: MessageListProps) => {
+export const MessageList = ({ conversation, currentUser, className }: MessageListProps) => {
   const messages = conversation.messages || []
 
   const formatMessageDate = (dateString: string) => {
@@ -69,7 +70,7 @@ export const MessageList = ({ conversation, currentUser }: MessageListProps) => 
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className={`flex-1 flex items-center justify-center p-8 ${className || ''}`}>
         <div className="text-center text-gray-500">
           <p className="text-lg">💬 Pronto para conversar!</p>
           <p className="text-sm mt-2">Seja o primeiro a enviar uma mensagem!</p>
@@ -79,7 +80,7 @@ export const MessageList = ({ conversation, currentUser }: MessageListProps) => 
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${className || ''}`}>
       {messages.map((message, index) => {
         const senderInfo = getSenderInfo(message)
         const showDateSeparator = shouldShowDateSeparator(index, messages)
