@@ -44,6 +44,12 @@ export const ConversationAssignment = ({
   const { toast } = useToast()
 
   console.log('ConversationAssignment props:', { conversationId, currentAssignee, agents: agents?.length })
+  console.log('Agents data:', agents?.map(a => ({ id: a.id, name: a.name, hasValidId: Boolean(a.id && a.id.trim()) })))
+
+  // Filter agents to only include those with valid, non-empty IDs
+  const validAgents = agents?.filter(agent => agent.id && agent.id.trim() !== '') || []
+  
+  console.log('Valid agents count:', validAgents.length)
 
   const handleAssign = async () => {
     if (!selectedAgentId) {
@@ -121,8 +127,8 @@ export const ConversationAssignment = ({
     }
   }
 
-  // Verificar se há agentes disponíveis
-  if (!agents || agents.length === 0) {
+  // Verificar se há agentes válidos disponíveis
+  if (!validAgents || validAgents.length === 0) {
     return (
       <div className="flex items-center space-x-2">
         <User className="h-3 w-3 text-gray-400" />
@@ -162,7 +168,7 @@ export const ConversationAssignment = ({
                   <SelectValue placeholder="Selecionar agente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {agents.map((agent) => (
+                  {validAgents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name} ({agent.email})
                     </SelectItem>
@@ -222,7 +228,7 @@ export const ConversationAssignment = ({
                 <SelectValue placeholder="Escolher agente" />
               </SelectTrigger>
               <SelectContent>
-                {agents.map((agent) => (
+                {validAgents.map((agent) => (
                   <SelectItem key={agent.id} value={agent.id}>
                     {agent.name} ({agent.email})
                   </SelectItem>
