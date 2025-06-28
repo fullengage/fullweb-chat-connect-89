@@ -16,6 +16,7 @@ import Teams from "@/pages/Teams";
 import AgentBots from "@/pages/AgentBots";
 import Accounts from "@/pages/Accounts";
 import Inbox from "@/pages/Inbox";
+import SuperAdmin from "@/pages/SuperAdmin";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -132,6 +133,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Accounts />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/super-admin" 
+        element={
+          <ProtectedRoute>
+            <SuperAdmin />
           </ProtectedRoute>
         } 
       />
