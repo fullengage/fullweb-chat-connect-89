@@ -64,8 +64,7 @@ export default function Inbox() {
   // Filter conversations based on search
   const filteredConversations = conversations.filter(conversation =>
     conversation.contact?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+    conversation.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   // Handle conversation selection
