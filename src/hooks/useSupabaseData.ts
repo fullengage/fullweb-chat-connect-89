@@ -32,11 +32,13 @@ export const useConversations = (filters?: any) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ['conversations', filters],
+    queryKey: ['conversations', filters, user?.id],
     queryFn: async () => {
       if (!user) {
         throw new Error('User not authenticated')
       }
+      
+      console.log('🔍 Fetching conversations with filters:', filters)
       
       let query = supabase
         .from('conversations')
@@ -48,8 +50,10 @@ export const useConversations = (filters?: any) => {
         `)
         .order('updated_at', { ascending: false })
 
+      // O RLS já garante o isolamento, mas vamos ser explícitos
       if (filters?.account_id) {
         query = query.eq('account_id', filters.account_id)
+        console.log('📊 Filtering by account_id:', filters.account_id)
       }
 
       if (filters?.status) {
@@ -63,9 +67,11 @@ export const useConversations = (filters?: any) => {
       const { data, error } = await query
 
       if (error) {
-        console.error('Error fetching conversations:', error)
+        console.error('❌ Error fetching conversations:', error)
         throw error
       }
+
+      console.log('✅ Conversations fetched:', data?.length || 0)
 
       // Transform data to match our Conversation interface
       const transformedData = (data || []).map((conv: any) => ({
@@ -119,27 +125,33 @@ export const useUsers = (accountId?: number) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ['users', accountId],
+    queryKey: ['users', accountId, user?.id],
     queryFn: async () => {
       if (!user) {
         throw new Error('User not authenticated')
       }
+      
+      console.log('🔍 Fetching users for account:', accountId)
       
       let query = supabase
         .from('users')
         .select('*')
         .order('name')
 
+      // O RLS já garante o isolamento, mas vamos ser explícitos
       if (accountId) {
         query = query.eq('account_id', accountId)
+        console.log('📊 Filtering users by account_id:', accountId)
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('Error fetching users:', error)
+        console.error('❌ Error fetching users:', error)
         throw error
       }
+
+      console.log('✅ Users fetched:', data?.length || 0)
 
       // Transform data to match User interface
       const transformedData = (data || []).map((user: any) => ({
@@ -164,27 +176,33 @@ export const useContacts = (accountId?: number) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ['contacts', accountId],
+    queryKey: ['contacts', accountId, user?.id],
     queryFn: async () => {
       if (!user) {
         throw new Error('User not authenticated')
       }
+      
+      console.log('🔍 Fetching contacts for account:', accountId)
       
       let query = supabase
         .from('contacts')
         .select('*')
         .order('name')
 
+      // O RLS já garante o isolamento, mas vamos ser explícitos
       if (accountId) {
         query = query.eq('account_id', accountId)
+        console.log('📊 Filtering contacts by account_id:', accountId)
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('Error fetching contacts:', error)
+        console.error('❌ Error fetching contacts:', error)
         throw error
       }
+
+      console.log('✅ Contacts fetched:', data?.length || 0)
 
       // Transform data to match Contact interface
       const transformedData = (data || []).map((contact: any) => ({
@@ -208,27 +226,33 @@ export const useInboxes = (accountId?: number) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ['inboxes', accountId],
+    queryKey: ['inboxes', accountId, user?.id],
     queryFn: async () => {
       if (!user) {
         throw new Error('User not authenticated')
       }
+      
+      console.log('🔍 Fetching inboxes for account:', accountId)
       
       let query = supabase
         .from('inboxes')
         .select('*')
         .order('name')
 
+      // O RLS já garante o isolamento, mas vamos ser explícitos
       if (accountId) {
         query = query.eq('account_id', accountId)
+        console.log('📊 Filtering inboxes by account_id:', accountId)
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('Error fetching inboxes:', error)
+        console.error('❌ Error fetching inboxes:', error)
         throw error
       }
+
+      console.log('✅ Inboxes fetched:', data?.length || 0)
 
       return (data || []).map((inbox: any) => ({
         id: inbox.id,
