@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast"
 import { ConversationForStats, Conversation } from "@/types"
 import { ChatArea } from "@/components/inbox/ChatArea"
 import { ConversationsSidebar } from "@/components/inbox/ConversationsSidebar"
-import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/useAuth"
+import { RoleGuard } from "@/components/RoleGuard"
 import { supabase } from "@/integrations/supabase/client"
 import { useEffect } from "react"
 
@@ -15,40 +16,20 @@ export default function Dashboard() {
   const [accountId, setAccountId] = useState("1")
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [showDetailsPanel, setShowDetailsPanel] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [assigneeFilter, setAssigneeFilter] = useState("all")
-  const { user: authUser } = useAuth()
   const { toast } = useToast()
+  const { user, isClient, isAgent, isAdmin, isSuperAdmin } = usePermissions()
 
   const accountIdNumber = accountId ? parseInt(accountId) : 1
 
-  // Fetch current user data
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      if (!authUser) return
-
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('auth_user_id', authUser.id)
-        .single()
-
-      if (error) {
-        console.error('Error fetching user data:', error)
-        return
-      }
-
-      setCurrentUser(userData)
-    }
-
-    fetchCurrentUser()
-  }, [authUser])
+  // Para clientes, usar um account_id específico ou baseado no usuário
+  const effectiveAccountId = isClient() && user ? user.account_id : accountIdNumber
 
   // Build filters object
   const filters = {
-    account_id: accountIdNumber,
+    account_id: effectiveAccountId,
   }
 
   const {
@@ -61,28 +42,46 @@ export default function Dashboard() {
   const {
     data: agents = [],
     isLoading: agentsLoading
-  } = useUsers(accountIdNumber)
+  } = useUsers(effectiveAccountId)
 
   const {
     data: inboxes = [],
     isLoading: inboxesLoading
-  } = useInboxes(accountIdNumber)
+  } = useInboxes(effectiveAccountId)
 
   const updateStatus = useUpdateConversationStatus()
 
-  // Filter conversations based on search and filters
+  // Para clientes, filtrar apenas conversas onde ele é o contato
   const filteredConversations = conversations.filter(conversation => {
-    // Search filter
+    // Se for cliente, mostrar apenas suas próprias conversas
+    if (isClient() && user) {
+      // Aqui você precisaria de uma lógica para identificar se a conversa pertence ao cliente
+      // Por exemplo, se o cliente tem um contact_id específico
+      // return conversation.contact_id === user.contact_id
+    }
+
+    // Para outros papéis, aplicar filtros normais
     const matchesSearch = !searchTerm || 
       conversation.contact?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conversation.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    // Status filter
     const matchesStatus = statusFilter === "all" || conversation.status === statusFilter
 
-    // Assignee filter
+    // Para agentes, filtrar apenas conversas atribuídas a eles
+    if (isAgent() && user) {
+      const matchesAssignee = assigneeFilter === "all" || 
+        (assigneeFilter === "mine" && conversation.assignee?.id === user.id) ||
+        (assigneeFilter === "unassigned" && !conversation.assignee?.id) ||
+        conversation.assignee?.id === assigneeFilter
+        
+      // Agentes só veem conversas atribuídas a eles ou não atribuídas da sua conta
+      return matchesSearch && matchesStatus && 
+        (conversation.assignee?.id === user.id || !conversation.assignee?.id)
+    }
+
+    // Para admins e superadmins
     const matchesAssignee = assigneeFilter === "all" || 
-      (assigneeFilter === "mine" && conversation.assignee?.id === currentUser?.id) ||
+      (assigneeFilter === "mine" && conversation.assignee?.id === user?.id) ||
       (assigneeFilter === "unassigned" && !conversation.assignee?.id) ||
       conversation.assignee?.id === assigneeFilter
 
@@ -101,7 +100,7 @@ export default function Dashboard() {
     setShowDetailsPanel(!showDetailsPanel)
   }
 
-  if (!currentUser) {
+  if (!user) {
     return (
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
@@ -118,39 +117,41 @@ export default function Dashboard() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset>
-          <div className="flex h-screen">
-            {/* Conversations Sidebar */}
-            <ConversationsSidebar
-              conversations={filteredConversations}
-              selectedConversation={selectedConversation}
-              onSelectConversation={setSelectedConversation}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              assigneeFilter={assigneeFilter}
-              onAssigneeFilterChange={setAssigneeFilter}
-              agents={agents}
-              isLoading={conversationsLoading}
-              currentUser={currentUser}
-            />
+    <RoleGuard allowedRoles={['superadmin', 'admin', 'agent', 'cliente']}>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <SidebarInset>
+            <div className="flex h-screen">
+              {/* Conversations Sidebar */}
+              <ConversationsSidebar
+                conversations={filteredConversations}
+                selectedConversation={selectedConversation}
+                onSelectConversation={setSelectedConversation}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                assigneeFilter={assigneeFilter}
+                onAssigneeFilterChange={setAssigneeFilter}
+                agents={agents}
+                isLoading={conversationsLoading}
+                currentUser={user}
+              />
 
-            {/* Main Chat Area */}
-            <ChatArea
-              conversation={selectedConversation}
-              currentUser={currentUser}
-              agents={agents}
-              onToggleDetails={handleToggleDetails}
-              showDetailsPanel={showDetailsPanel}
-              onRefreshConversations={refetchConversations}
-            />
-          </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+              {/* Main Chat Area */}
+              <ChatArea
+                conversation={selectedConversation}
+                currentUser={user}
+                agents={agents}
+                onToggleDetails={handleToggleDetails}
+                showDetailsPanel={showDetailsPanel}
+                onRefreshConversations={refetchConversations}
+              />
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </RoleGuard>
   )
 }

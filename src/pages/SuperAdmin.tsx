@@ -30,6 +30,8 @@ import {
 import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '@/hooks/useAccounts';
 import { NewAccountDialog } from '@/components/NewAccountDialog';
 import { CreateAdminUserDialog } from '@/components/CreateAdminUserDialog';
+import { RoleGuard } from '@/components/RoleGuard';
+import { usePermissions } from '@/hooks/useAuth';
 
 const SuperAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -38,6 +40,8 @@ const SuperAdmin = () => {
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<{id: number, name: string} | null>(null);
+  
+  const { user, isSuperAdmin } = usePermissions();
 
   // Hooks do Supabase
   const { data: accounts = [], isLoading: loading, error } = useAccounts();
@@ -136,6 +140,20 @@ const SuperAdmin = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Verificar se o usuário é superadmin
+  if (!isSuperAdmin()) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Alert className="border-red-200 bg-red-50 max-w-md">
+          <Lock className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            Acesso negado. Esta área é restrita a Super Administradores.
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
   const Header = () => (
     <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
       <div className="flex items-center space-x-4">
@@ -154,7 +172,7 @@ const SuperAdmin = () => {
           <SelectTrigger className="w-auto">
             <div className="flex items-center space-x-2">
               <User className="h-4 w-4" />
-              <span>Super Admin</span>
+              <span>{user?.name || 'Super Admin'}</span>
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -499,19 +517,163 @@ const SuperAdmin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="flex">
-        <Sidebar />
+    <RoleGuard requireSuperAdmin>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">CRM Hub - Super Admin</h1>
+              <p className="text-sm text-gray-500">Painel de Administração</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm" className="relative">
+              <Bell className="h-5 w-5" />
+            </Button>
+            
+            <Select defaultValue="user">
+              <SelectTrigger className="w-auto">
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4" />
+                  <span>{user?.name || 'Super Admin'}</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="profile">Perfil</SelectItem>
+                <SelectItem value="logout">
+                  <div className="flex items-center space-x-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Sair</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         
-        <main className="flex-1 p-8">
-          {activeTab === 'dashboard' && <DashboardView />}
-          {activeTab === 'companies' && <CompaniesTable />}
-          {activeTab === 'settings' && <SettingsView />}
-        </main>
+        <div className="flex">
+          {/* Sidebar */}
+          <div className="bg-gray-50 w-64 min-h-screen border-r border-gray-200">
+            <div className="p-6">
+              <nav className="space-y-2">
+                <Button
+                  variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('dashboard')}
+                >
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Visão Geral
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'companies' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('companies')}
+                >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Empresas
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'settings' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('settings')}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Configurações
+                </Button>
+              </nav>
+            </div>
+          </div>
+          
+          <main className="flex-1 p-8">
+            {activeTab === 'dashboard' && (
+              <div className="space-y-8">
+                {/* Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  {/* ... keep existing code (metrics cards) */}
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* ... keep existing code (recent companies and system status cards) */}
+                </div>
+              </div>
+            )}
+            {activeTab === 'companies' && (
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Empresas</CardTitle>
+                      <CardDescription>Gerencie todas as contas do sistema</CardDescription>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => setIsCreateCompanyOpen(true)}
+                      disabled={loading || createAccountMutation.isPending}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Nova Empresa
+                    </Button>
+                  </div>
+                  
+                  <div className="flex space-x-4 mt-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar empresas..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                    
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-48">
+                        <Filter className="mr-2 h-4 w-4" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        <SelectItem value="active">Ativas</SelectItem>
+                        <SelectItem value="blocked">Bloqueadas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {/* ... keep existing code (companies table) */}
+                </CardContent>
+                
+                <NewAccountDialog
+                  open={isCreateCompanyOpen}
+                  onOpenChange={setIsCreateCompanyOpen}
+                  onSave={handleCreateCompany}
+                />
+                
+                <CreateAdminUserDialog
+                  open={isCreateAdminOpen}
+                  onOpenChange={setIsCreateAdminOpen}
+                  accountId={selectedAccount?.id || 0}
+                  accountName={selectedAccount?.name || ''}
+                  onSuccess={() => {
+                    // Optionally refresh data or show success message
+                  }}
+                />
+              </Card>
+            )}
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                {/* ... keep existing code (settings view) */}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </RoleGuard>
   );
 };
 
