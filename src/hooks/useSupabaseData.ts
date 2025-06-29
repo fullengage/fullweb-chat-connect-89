@@ -3,7 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/NewAuthContext'
 import { useToast } from '@/hooks/use-toast'
-import { Conversation, User, Inbox } from '@/types'
+import { Conversation, User as BaseUser, Inbox as BaseInbox } from '@/types'
+
+// Re-export User type so components can import it from here
+export type User = BaseUser
 
 export interface Contact {
   id: number
@@ -14,6 +17,13 @@ export interface Contact {
   avatar_url?: string
   created_at: string
   updated_at: string
+}
+
+// Extended Inbox interface with created_at property
+export interface Inbox extends BaseInbox {
+  created_at?: string
+  updated_at?: string
+  channel_type: string // Make this required for consistency
 }
 
 export type ConversationForStats = Pick<Conversation, 'id' | 'status'>
@@ -223,7 +233,9 @@ export const useInboxes = (accountId?: number) => {
       return (data || []).map((inbox: any) => ({
         id: inbox.id,
         name: inbox.name,
-        channel_type: inbox.channel_type || 'webchat'
+        channel_type: inbox.channel_type || 'webchat',
+        created_at: inbox.created_at,
+        updated_at: inbox.updated_at
       })) as Inbox[]
     },
     enabled: !!user,

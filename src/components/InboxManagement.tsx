@@ -122,7 +122,10 @@ export const InboxManagement = ({ accountId }: InboxManagementProps) => {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Criado em {new Date(inbox.created_at).toLocaleDateString('pt-BR')}
+                    {inbox.created_at 
+                      ? `Criado em ${new Date(inbox.created_at).toLocaleDateString('pt-BR')}`
+                      : 'Data de criação não disponível'
+                    }
                   </p>
                 </CardContent>
               </Card>
