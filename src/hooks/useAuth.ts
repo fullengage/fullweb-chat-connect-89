@@ -49,7 +49,19 @@ export const useAuthUser = () => {
         account_id: userData.account_id 
       })
 
-      return userData as AuthUser
+      // Map database fields to interface - corrigindo isactive para isActive
+      return {
+        id: userData.id,
+        account_id: userData.account_id,
+        role: userData.role,
+        name: userData.name,
+        email: userData.email,
+        avatar_url: userData.avatar_url,
+        auth_user_id: userData.auth_user_id,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+        isActive: userData.isactive // Mapeando isactive (DB) para isActive (interface)
+      } as AuthUser
     },
     enabled: !!authUser,
     staleTime: 5 * 60 * 1000, // 5 minutes
