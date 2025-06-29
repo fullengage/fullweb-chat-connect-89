@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ChatInput } from "@/components/ChatInput"
@@ -17,7 +16,7 @@ import { ConversationAssignment } from "@/components/ConversationAssignment"
 import { MessageList } from "./MessageList"
 import { useSendMessage } from "@/hooks/useSupabaseData"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/contexts/NewAuthContext"
 
 interface ChatAreaProps {
   conversation: Conversation | null

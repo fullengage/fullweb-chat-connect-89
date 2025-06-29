@@ -8,7 +8,7 @@ export interface Agent {
 export interface ConversationForStats {
   id: number
   status: string
-  unread_count: number // Made required to match usage
+  unread_count: number
   contact: {
     id: number
     name: string
@@ -18,7 +18,7 @@ export interface ConversationForStats {
     additional_attributes?: any
   }
   assignee?: {
-    id: string // Changed from number to string to match Supabase UUIDs
+    id: string
     name: string
     avatar_url?: string
   }
@@ -49,6 +49,7 @@ export interface Conversation {
   additional_attributes?: any
   custom_attributes?: any
   subject?: string
+  messages?: any[]
   contact?: {
     id: number
     name: string
@@ -58,7 +59,7 @@ export interface Conversation {
     additional_attributes?: any
   }
   assignee?: {
-    id: string // Fixed: Changed from number to string to match Supabase UUIDs
+    id: string
     name: string
     avatar_url?: string
   }
@@ -67,7 +68,6 @@ export interface Conversation {
     name: string
     channel_type: string
   }
-  messages?: any[]
 }
 
 export interface User {

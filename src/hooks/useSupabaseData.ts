@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/NewAuthContext'
@@ -9,6 +10,7 @@ export interface Contact {
   name: string
   email: string
   phone: string
+  avatar_url?: string
   created_at: string
   updated_at: string
 }
@@ -18,6 +20,7 @@ export interface User {
   account_id: number
   name: string
   email: string
+  avatar_url?: string
   role: string
   created_at: string
   updated_at: string
@@ -27,6 +30,7 @@ export interface Inbox {
   id: number
   account_id: number
   name: string
+  channel_type?: string
   created_at: string
   updated_at: string
 }
@@ -38,8 +42,10 @@ export interface Conversation {
   inbox_id: number
   status: string
   assignee_id: string | null
+  priority?: 'high' | 'medium' | 'low'
   created_at: string
   updated_at: string
+  messages?: any[]
   contact?: Contact
   assignee?: User
   inbox?: Inbox
@@ -86,7 +92,28 @@ export const useConversations = (filters?: any) => {
         throw error
       }
 
-      return data || []
+      // Transform data to match our interfaces
+      const transformedData = (data || []).map((conv: any) => ({
+        ...conv,
+        priority: conv.priority === 'high' || conv.priority === 'medium' || conv.priority === 'low' 
+          ? conv.priority 
+          : 'medium' as const,
+        messages: [], // Initialize empty messages array
+        contact: conv.contact ? {
+          ...conv.contact,
+          avatar_url: conv.contact.avatar_url || undefined
+        } : undefined,
+        assignee: conv.assignee ? {
+          ...conv.assignee,
+          avatar_url: conv.assignee.avatar_url || undefined
+        } : undefined,
+        inbox: conv.inbox ? {
+          ...conv.inbox,
+          channel_type: conv.inbox.channel_type || 'webchat'
+        } : undefined
+      }))
+
+      return transformedData as Conversation[]
     },
     enabled: !!user,
   })
@@ -118,7 +145,51 @@ export const useUsers = (accountId?: number) => {
         throw error
       }
 
-      return data || []
+      // Transform data to match User interface
+      const transformedData = (data || []).map((user: any) => ({
+        ...user,
+        avatar_url: user.avatar_url || undefined
+      }))
+
+      return transformedData as User[]
+    },
+    enabled: !!user,
+  })
+}
+
+export const useContacts = (accountId?: number) => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ['contacts', accountId],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+      
+      let query = supabase
+        .from('contacts')
+        .select('*')
+        .order('name')
+
+      if (accountId) {
+        query = query.eq('account_id', accountId)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching contacts:', error)
+        throw error
+      }
+
+      // Transform data to match Contact interface
+      const transformedData = (data || []).map((contact: any) => ({
+        ...contact,
+        avatar_url: contact.avatar_url || undefined
+      }))
+
+      return transformedData as Contact[]
     },
     enabled: !!user,
   })
@@ -190,5 +261,44 @@ export const useUpdateConversationStatus = () => {
         variant: "destructive",
       })
     },
+  })
+}
+
+export const useSendMessage = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (messageData: {
+      conversation_id: number
+      sender_type: 'contact' | 'agent' | 'system'
+      sender_id?: string
+      content: string
+      attachments?: any
+    }) => {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      toast({
+        title: "Mensagem enviada",
+        description: "Mensagem enviada com sucesso",
+      })
+    },
+    onError: (error: any) => {
+      console.error('Error sending message:', error)
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
   })
 }

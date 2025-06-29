@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Mail, Phone, Calendar } from "lucide-react";
 import { useContacts } from "@/hooks/useSupabaseData";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/NewAuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
