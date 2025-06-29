@@ -31,7 +31,7 @@ import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } fro
 import { NewAccountDialog } from '@/components/NewAccountDialog';
 import { CreateAdminUserDialog } from '@/components/CreateAdminUserDialog';
 import { RoleGuard } from '@/components/RoleGuard';
-import { usePermissions } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/useNewAuth';
 
 const SuperAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -41,7 +41,7 @@ const SuperAdmin = () => {
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<{id: number, name: string} | null>(null);
   
-  const { user, isSuperAdmin } = usePermissions();
+  const { profile, isSuperAdmin } = usePermissions();
 
   // Hooks do Supabase
   const { data: accounts = [], isLoading: loading, error } = useAccounts();
@@ -172,7 +172,7 @@ const SuperAdmin = () => {
           <SelectTrigger className="w-auto">
             <div className="flex items-center space-x-2">
               <User className="h-4 w-4" />
-              <span>{user?.name || 'Super Admin'}</span>
+              <span>{profile?.name || 'Super Admin'}</span>
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -537,7 +537,7 @@ const SuperAdmin = () => {
               <SelectTrigger className="w-auto">
                 <div className="flex items-center space-x-2">
                   <User className="h-4 w-4" />
-                  <span>{user?.name || 'Super Admin'}</span>
+                  <span>{profile?.name || 'Super Admin'}</span>
                 </div>
               </SelectTrigger>
               <SelectContent>

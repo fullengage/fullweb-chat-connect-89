@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { usePermissions } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/useNewAuth'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Lock } from 'lucide-react'
 
@@ -19,9 +19,9 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   requireAccountAccess,
   fallback
 }) => {
-  const { user, isSuperAdmin, canManageAccount } = usePermissions()
+  const { profile, isSuperAdmin, canManageAccount } = usePermissions()
 
-  if (!user) {
+  if (!profile) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -54,12 +54,12 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   }
 
   // Verificar papéis permitidos
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(profile.role)) {
     return fallback || (
       <Alert className="border-red-200 bg-red-50">
         <Lock className="h-4 w-4 text-red-600" />
         <AlertDescription className="text-red-800">
-          Acesso negado. Seu papel ({user.role}) não tem permissão para acessar esta área.
+          Acesso negado. Seu papel ({profile.role}) não tem permissão para acessar esta área.
         </AlertDescription>
       </Alert>
     )
