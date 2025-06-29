@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/NewAuthContext'
 import { useToast } from '@/hooks/use-toast'
+import { Conversation, User, Inbox } from '@/types'
 
 export interface Contact {
   id: number
@@ -13,42 +14,6 @@ export interface Contact {
   avatar_url?: string
   created_at: string
   updated_at: string
-}
-
-export interface User {
-  id: string
-  account_id: number
-  name: string
-  email: string
-  avatar_url?: string
-  role: string
-  created_at: string
-  updated_at: string
-}
-
-export interface Inbox {
-  id: number
-  account_id: number
-  name: string
-  channel_type?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface Conversation {
-  id: number
-  account_id: number
-  contact_id: number
-  inbox_id: number
-  status: string
-  assignee_id: string | null
-  priority?: 'high' | 'medium' | 'low'
-  created_at: string
-  updated_at: string
-  messages?: any[]
-  contact?: Contact
-  assignee?: User
-  inbox?: Inbox
 }
 
 export type ConversationForStats = Pick<Conversation, 'id' | 'status'>
@@ -92,25 +57,46 @@ export const useConversations = (filters?: any) => {
         throw error
       }
 
-      // Transform data to match our interfaces
+      // Transform data to match our Conversation interface
       const transformedData = (data || []).map((conv: any) => ({
-        ...conv,
-        priority: conv.priority === 'high' || conv.priority === 'medium' || conv.priority === 'low' 
+        id: conv.id,
+        account_id: conv.account_id,
+        contact_id: conv.contact_id,
+        status: conv.status,
+        assignee_id: conv.assignee_id,
+        kanban_stage: conv.kanban_stage || 'novo',
+        priority: (conv.priority === 'high' || conv.priority === 'medium' || conv.priority === 'low') 
           ? conv.priority 
           : 'medium' as const,
+        last_activity_at: conv.last_activity_at || conv.updated_at,
+        created_at: conv.created_at,
+        updated_at: conv.updated_at,
+        first_reply_created_at: conv.first_reply_created_at,
+        waiting_since: conv.waiting_since,
+        snoozed_until: conv.snoozed_until,
+        unread_count: conv.unread_count || 0,
+        additional_attributes: conv.additional_attributes,
+        custom_attributes: conv.custom_attributes,
+        subject: conv.subject,
         messages: [], // Initialize empty messages array
         contact: conv.contact ? {
-          ...conv.contact,
-          avatar_url: conv.contact.avatar_url || undefined
+          id: conv.contact.id,
+          name: conv.contact.name || 'Unknown Contact',
+          email: conv.contact.email,
+          phone: conv.contact.phone,
+          avatar_url: conv.contact.avatar_url,
+          additional_attributes: conv.contact.additional_attributes
         } : undefined,
         assignee: conv.assignee ? {
-          ...conv.assignee,
-          avatar_url: conv.assignee.avatar_url || undefined
+          id: conv.assignee.id,
+          name: conv.assignee.name || 'Unknown Assignee',
+          avatar_url: conv.assignee.avatar_url
         } : undefined,
-        inbox: conv.inbox ? {
-          ...conv.inbox,
-          channel_type: conv.inbox.channel_type || 'webchat'
-        } : undefined
+        inbox: {
+          id: conv.inbox?.id || 1,
+          name: conv.inbox?.name || 'Default Inbox',
+          channel_type: conv.inbox?.channel_type || 'webchat'
+        }
       }))
 
       return transformedData as Conversation[]
@@ -147,8 +133,15 @@ export const useUsers = (accountId?: number) => {
 
       // Transform data to match User interface
       const transformedData = (data || []).map((user: any) => ({
-        ...user,
-        avatar_url: user.avatar_url || undefined
+        id: user.id,
+        account_id: user.account_id,
+        name: user.name || 'Unknown User',
+        email: user.email || 'no-email@example.com',
+        display_name: user.display_name,
+        avatar_url: user.avatar_url,
+        role: user.role,
+        created_at: user.created_at,
+        updated_at: user.updated_at
       }))
 
       return transformedData as User[]
@@ -185,8 +178,14 @@ export const useContacts = (accountId?: number) => {
 
       // Transform data to match Contact interface
       const transformedData = (data || []).map((contact: any) => ({
-        ...contact,
-        avatar_url: contact.avatar_url || undefined
+        id: contact.id,
+        account_id: contact.account_id,
+        name: contact.name || 'Unknown Contact',
+        email: contact.email || '',
+        phone: contact.phone || '',
+        avatar_url: contact.avatar_url,
+        created_at: contact.created_at,
+        updated_at: contact.updated_at
       }))
 
       return transformedData as Contact[]
@@ -221,7 +220,11 @@ export const useInboxes = (accountId?: number) => {
         throw error
       }
 
-      return data || []
+      return (data || []).map((inbox: any) => ({
+        id: inbox.id,
+        name: inbox.name,
+        channel_type: inbox.channel_type || 'webchat'
+      })) as Inbox[]
     },
     enabled: !!user,
   })

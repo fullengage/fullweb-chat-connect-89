@@ -102,5 +102,5 @@ export interface Message {
 export interface Inbox {
   id: number
   name: string
-  channel_type: string
+  channel_type?: string
 }
