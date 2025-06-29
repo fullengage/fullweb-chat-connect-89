@@ -1,164 +1,135 @@
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import Landing from "@/pages/Landing";
-import Conversations from "@/pages/Conversations";
-import Analytics from "@/pages/Analytics";
-import Kanban from "@/pages/Kanban";
-import Email from "@/pages/Email";
-import Contacts from "@/pages/Contacts";
-import Agents from "@/pages/Agents";
-import Teams from "@/pages/Teams";
-import AgentBots from "@/pages/AgentBots";
-import Accounts from "@/pages/Accounts";
-import Inbox from "@/pages/Inbox";
-import SuperAdmin from "@/pages/SuperAdmin";
-import "./App.css";
+import { Suspense, lazy } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from '@/components/ui/toaster'
+import { AuthProvider } from '@/contexts/NewAuthContext'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
-const queryClient = new QueryClient();
+// Lazy loading das páginas
+const NewAuth = lazy(() => import('@/pages/NewAuth'))
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const Conversations = lazy(() => import('@/pages/Conversations'))
+const Contacts = lazy(() => import('@/pages/Contacts'))
+const Agents = lazy(() => import('@/pages/Agents'))
+const Teams = lazy(() => import('@/pages/Teams'))
+const Analytics = lazy(() => import('@/pages/Analytics'))
+const Accounts = lazy(() => import('@/pages/Accounts'))
+const SuperAdmin = lazy(() => import('@/pages/SuperAdmin'))
+const NotFound = lazy(() => import('@/pages/NotFound'))
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return <>{children}</>;
-}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      retry: 1,
+    },
+  },
+})
 
-function AppRoutes() {
-  const { user } = useAuth();
-  
+function LoadingSpinner() {
   return (
-    <Routes>
-      <Route 
-        path="/auth" 
-        element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
-      />
-      <Route 
-        path="/" 
-        element={<Landing />}
-      />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/kanban" 
-        element={
-          <ProtectedRoute>
-            <Kanban />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/conversations" 
-        element={
-          <ProtectedRoute>
-            <Conversations />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/inbox" 
-        element={
-          <ProtectedRoute>
-            <Inbox />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/analytics" 
-        element={
-          <ProtectedRoute>
-            <Analytics />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/email" 
-        element={
-          <ProtectedRoute>
-            <Email />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/contacts" 
-        element={
-          <ProtectedRoute>
-            <Contacts />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/agents" 
-        element={
-          <ProtectedRoute>
-            <Agents />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/teams" 
-        element={
-          <ProtectedRoute>
-            <Teams />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/agent-bots" 
-        element={
-          <ProtectedRoute>
-            <AgentBots />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/accounts" 
-        element={
-          <ProtectedRoute>
-            <Accounts />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/super-admin" 
-        element={
-          <ProtectedRoute>
-            <SuperAdmin />
-          </ProtectedRoute>
-        } 
-      />
-    </Routes>
-  );
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  )
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <Toaster />
-        </BrowserRouter>
+        <Router>
+          <div className="min-h-screen bg-background">
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                {/* Rota de autenticação */}
+                <Route path="/login" element={<NewAuth />} />
+                
+                {/* Rotas protegidas */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/conversations"
+                  element={
+                    <ProtectedRoute>
+                      <Conversations />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/contacts"
+                  element={
+                    <ProtectedRoute>
+                      <Contacts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/agents"
+                  element={
+                    <ProtectedRoute>
+                      <Agents />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/teams"
+                  element={
+                    <ProtectedRoute>
+                      <Teams />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <Analytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/accounts"
+                  element={
+                    <ProtectedRoute>
+                      <Accounts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/superadmin"
+                  element={
+                    <ProtectedRoute>
+                      <SuperAdmin />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+            <Toaster />
+          </div>
+        </Router>
       </AuthProvider>
     </QueryClientProvider>
-  );
+  )
 }
 
-export default App;
+export default App
